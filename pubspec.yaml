@@ -94,6 +94,11 @@ flutter:
   assets:
     - assets/fonts/
     - assets/icons/
+    - assets/icons/login/
+    - assets/icons/register/
+    - assets/icons/dashboard/
+    - assets/icons/configuration/
+    - assets/icons/Analytic/
     - assets/images/
     - assets/lottie/
 

@@ -8,8 +8,9 @@ class AppTextStyles {
   // Headings
   static const TextStyle heading1 = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
+    fontSize: 36,
+    fontStyle: FontStyle.italic,
+    fontWeight: FontWeight.w900,
     height: 1.2,
   );
 

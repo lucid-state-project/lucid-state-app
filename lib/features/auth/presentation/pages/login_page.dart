@@ -30,8 +30,14 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _onContinueWithGuest() {
+    // TODO: Implement Google sign-in
+    context.go(AppRoutes.dashboard);
+  }
+
   void _onContinueWithGoogle() {
     // TODO: Implement Google sign-in
+    context.go(AppRoutes.dashboard);
   }
 
   @override
@@ -55,13 +61,14 @@ class _LoginPageState extends State<LoginPage> {
 
                 // ── Form Card ─────────────────────────────────────────────
                 AppCard(
-                  padding: const EdgeInsets.all(24),
+                  borderRadius: 32,
+                  padding: const EdgeInsets.all(32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Email field
                       AppTextField(
-                        label: 'Email Address',
+                        label: 'EMAIL ADDRESS',
                         hint: 'Enter your email',
                         prefixIcon: Icons.email_outlined,
                         controller: _emailController,
@@ -86,13 +93,14 @@ class _LoginPageState extends State<LoginPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Password',
+                            'PASSWORD',
                             style: AppTextStyles.labelLarge.copyWith(
                               color: AppColors.textPrimary,
                             ),
                           ),
                           TextButtonLink(
                             text: 'Forgot?',
+                            color: AppColors.primaryLight,
                             onPressed: null, // inactive for now
                           ),
                         ],
@@ -128,6 +136,18 @@ class _LoginPageState extends State<LoginPage> {
 
                       const SizedBox(height: 24),
 
+                      // Continue with Guest button
+                      SecondaryButton(
+                        borderColor:  AppColors.primaryLight,
+                        text: 'Continue with Guest',
+                        textStyle: AppTextStyles.button.copyWith(
+                          color: AppColors.primaryLight,
+                        ),
+                        onPressed: _onContinueWithGuest,
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Continue with Google button
                       SecondaryButton(
                         text: 'Continue with Google',
@@ -152,11 +172,12 @@ class _LoginPageState extends State<LoginPage> {
                     Text(
                       "Don't have an account? ",
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     TextButtonLink(
                       text: 'Sign Up',
+                      color: AppColors.primaryLight,
                       onPressed: () => context.go(AppRoutes.register),
                     ),
                   ],
@@ -187,30 +208,35 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       children: [
         // Square logo tile
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Center(
-            child: Text(
-              'L',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 38,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'PlusJakartaSans',
-              ),
-            ),
-          ),
-        ),
+      Container(
+  width: 80,
+  height: 80,
+  decoration: BoxDecoration(
+    shape: BoxShape.circle,
+    gradient: LinearGradient(
+      colors: [
+        Color(AppColors.primaryDark.value),
+        Color(AppColors.primaryLight.value),
+      ],
+      begin: Alignment.bottomLeft,
+      end: Alignment.topRight,
+    ),
+  ),
+  child: Center(
+    child: Padding(
+      padding: const EdgeInsets.all(2), // biar ada jarak kayak design
+      child: Image.asset(
+        'assets/images/Logo.png',
+        fit: BoxFit.contain, // penting!
+      ),
+    ),
+  ),
+),
         const SizedBox(height: 14),
         Text(
           'LUCID',
           style: AppTextStyles.heading1.copyWith(
-            color: AppColors.primary,
+            color: AppColors.primaryDark,
             letterSpacing: 3,
           ),
         ),

@@ -80,11 +80,11 @@ class SecondaryButton extends StatelessWidget {
               const SizedBox(width: 10),
             ],
             Text(
-              text,
-              style: (textStyle ?? AppTextStyles.button).copyWith(
-                color: foregroundColor,
-              ),
-            ),
+  text,
+  style: textStyle ?? AppTextStyles.button.copyWith(
+    color: foregroundColor,
+  ),
+),
           ],
         ),
       ),

@@ -5,8 +5,8 @@ class AppColors {
 
   // Primary Colors
   static const Color primary = Color(0xFF4B2B8F);      // Deep Purple
-  static const Color primaryLight = Color(0xFF6C4BB5);
-  static const Color primaryDark = Color(0xFF3A1F66);
+  static const Color primaryLight = Color(0xFF841CD8);
+  static const Color primaryDark = Color(0xFF15157D);
 
   // Neutral Colors
   static const Color background = Color(0xFFF6F8FA);

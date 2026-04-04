@@ -8,13 +8,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lucid_state_app/app/app.dart';
-import 'package:lucid_state_app/core/constants/app_strings.dart';
 
 void main() {
-  testWidgets('App shows home title and subtitle', (WidgetTester tester) async {
+  testWidgets('App starts at login page', (WidgetTester tester) async {
     await tester.pumpWidget(const LucidStateApp());
+    await tester.pumpAndSettle();
 
-    expect(find.text(AppStrings.homeTitle), findsOneWidget);
-    expect(find.text(AppStrings.homeSubtitle), findsOneWidget);
+    expect(find.text('Login Page'), findsOneWidget);
   });
 }

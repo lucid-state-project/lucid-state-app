@@ -81,42 +81,66 @@ class AppCheckbox extends StatelessWidget {
   /// Optional validation error text shown below the checkbox.
   final String? errorText;
 
-  /// Builds a [TextSpan] tree from [label], replacing each [links] entry
-  /// with a tappable span.
+  /// Builds a [TextSpan] tree from [label], replacing every occurrence of each
+  /// [links] entry's text with a tappable span.
+  ///
+  /// Occurrences are processed left-to-right so overlapping patterns are
+  /// handled gracefully.
   List<TextSpan> _buildSpans(TextStyle baseStyle) {
     if (links.isEmpty) {
       return [TextSpan(text: label, style: baseStyle)];
     }
 
-    final spans = <TextSpan>[];
-    String remaining = label;
-
+    // Build a sorted list of (startIndex, link) for all occurrences of every
+    // link text within [label], then iterate in order.
+    final matches = <({int start, int end, AppCheckboxLabelLink link})>[];
     for (final link in links) {
-      final idx = remaining.indexOf(link.text);
-      if (idx == -1) continue;
+      int searchFrom = 0;
+      while (true) {
+        final idx = label.indexOf(link.text, searchFrom);
+        if (idx == -1) break;
+        matches.add((start: idx, end: idx + link.text.length, link: link));
+        searchFrom = idx + link.text.length;
+      }
+    }
+    matches.sort((a, b) => a.start.compareTo(b.start));
 
-      if (idx > 0) {
-        spans.add(TextSpan(text: remaining.substring(0, idx), style: baseStyle));
+    if (matches.isEmpty) {
+      return [TextSpan(text: label, style: baseStyle)];
+    }
+
+    final spans = <TextSpan>[];
+    int cursor = 0;
+
+    for (final m in matches) {
+      // Skip overlapping matches
+      if (m.start < cursor) continue;
+
+      if (m.start > cursor) {
+        spans.add(TextSpan(
+          text: label.substring(cursor, m.start),
+          style: baseStyle,
+        ));
       }
 
       spans.add(
         TextSpan(
-          text: link.text,
+          text: label.substring(m.start, m.end),
           style: baseStyle.copyWith(
-            color: link.color,
+            color: m.link.color,
             fontWeight: FontWeight.w600,
             decoration: TextDecoration.underline,
-            decorationColor: link.color,
+            decorationColor: m.link.color,
           ),
-          recognizer: TapGestureRecognizer()..onTap = link.onTap,
+          recognizer: TapGestureRecognizer()..onTap = m.link.onTap,
         ),
       );
 
-      remaining = remaining.substring(idx + link.text.length);
+      cursor = m.end;
     }
 
-    if (remaining.isNotEmpty) {
-      spans.add(TextSpan(text: remaining, style: baseStyle));
+    if (cursor < label.length) {
+      spans.add(TextSpan(text: label.substring(cursor), style: baseStyle));
     }
 
     return spans;

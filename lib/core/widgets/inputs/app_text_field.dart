@@ -145,7 +145,7 @@ class _AppTextFieldState extends State<AppTextField> {
             filled: true,
             fillColor: widget.enabled
                 ? (widget.fillColor ?? AppColors.surfaceVariant)
-                : AppColors.disabled.withAlpha(80),
+                : AppColors.disabled.withOpacity(0.31),
             contentPadding: widget.contentPadding ??
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             // Leading icon

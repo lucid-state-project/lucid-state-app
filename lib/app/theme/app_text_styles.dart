@@ -21,6 +21,14 @@ class AppTextStyles {
     height: 1.3,
   );
 
+    static const TextStyle heading2Italic = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 24,
+    fontStyle: FontStyle.italic,
+    fontWeight: FontWeight.w700,
+    height: 1.3,
+  );
+
   static const TextStyle heading3 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 20,

@@ -57,7 +57,6 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
 
                 // ── Header ──────────────────────────────────────────────
                 _buildHeader(),
@@ -71,6 +70,26 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Title
+                      Text(
+                        'Join the Flow',
+                        style: AppTextStyles.heading1.copyWith(
+                          color: AppColors.textPrimary,
+                          fontStyle: FontStyle.normal,
+                          fontSize: 30
+                        ),
+                      ),
+
+                       const SizedBox(height: 12),
+  // Subtitle
+                      Text(
+                        'Begin your journey toward mental clarity and deep observation.',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                       const SizedBox(height: 24),
+  // Subtitle
                       // Full Name field
                       AppTextField(
                         label: 'FULL NAME',
@@ -228,36 +247,33 @@ class _RegisterPageState extends State<RegisterPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // "LucidState" brand with underline
-        Text(
-          'LucidState',
-          style: AppTextStyles.heading2.copyWith(
+        Container(
+  width: double.infinity,
+  alignment: Alignment.center,
+  child: Text('LucidState',
+          style: AppTextStyles.heading2Italic.copyWith(
             color: AppColors.primaryDark,
-            decoration: TextDecoration.underline,
             decorationColor: AppColors.primaryDark,
             decorationThickness: 2,
-          ),
+          ),),
         ),
-
-        const SizedBox(height: 16),
-
-        // Title
-        Text(
-          'Join the Flow',
-          style: AppTextStyles.heading1.copyWith(
-            color: AppColors.textPrimary,
-            fontStyle: FontStyle.normal,
-          ),
-        ),
-
         const SizedBox(height: 8),
-
-        // Subtitle
-        Text(
-          'Begin your journey toward mental clarity and deep observation.',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
+        // garis pendek tengah
+        Center(
+            child: Container(
+              width: 60,
+              height: 6,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(AppColors.primaryDark.value),
+                    Color(AppColors.primaryLight.value),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }

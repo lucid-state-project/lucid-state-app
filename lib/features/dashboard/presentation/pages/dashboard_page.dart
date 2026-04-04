@@ -237,7 +237,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 12),
                     ActivityCard(
                       activityName: 'Deep Work API Integration',
-                      duration: '420 15s',
+                      duration: '1h 45m',
                       onProductiveTap: () {
                         // TODO: mark as productive
                       },

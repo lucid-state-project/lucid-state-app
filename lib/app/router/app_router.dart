@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucid_state_app/app/router/routes.dart';
 import 'package:lucid_state_app/features/analytics/presentation/pages/analytics_page.dart';
@@ -45,7 +46,23 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.configuration,
       name: AppRoutes.configurationName,
-      builder: (context, state) => const ConfigurationPage(),
+      pageBuilder: (context, state) => CustomTransitionPage<void>(
+        key: state.pageKey,
+        child: const ConfigurationPage(),
+        transitionDuration: const Duration(milliseconds: 260),
+        reverseTransitionDuration: const Duration(milliseconds: 260),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final tween = Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
     ),
   ],
 );

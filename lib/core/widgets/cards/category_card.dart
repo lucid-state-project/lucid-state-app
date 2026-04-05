@@ -39,7 +39,7 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AppCard(
-        padding: const EdgeInsets.fromLTRB(20, 20, 16, 4),
+        padding: const EdgeInsets.fromLTRB(24, 26, 16, 0),
         borderRadius: 24,
         elevation: 2,
         child: Column(
@@ -70,7 +70,7 @@ class CategoryCard extends StatelessWidget {
               subtitle,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
-                height: 1.2,
+                height: 1.6,
               ),
             ),
           ],

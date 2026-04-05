@@ -122,10 +122,13 @@ class _AnalyticsHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Image.asset(
-            'assets/icons/Analytic/Icon-4.png',
-            width: 22,
-            height: 22,
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.configuration),
+            child: Image.asset(
+              'assets/icons/Analytic/Icon-4.png',
+              width: 22,
+              height: 22,
+            ),
           ),
         ],
       ),

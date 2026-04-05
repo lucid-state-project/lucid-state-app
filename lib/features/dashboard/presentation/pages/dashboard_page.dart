@@ -21,6 +21,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isSetDuration = true; // true = Set Duration, false = Open Timer
   bool _isNavigating = false;
   int _navPreviewIndex = 0;
+  bool? _isLastSessionProductive;
   final _activityController = TextEditingController();
   final _durationController = TextEditingController(text: '25');
   final _durationFocusNode = FocusNode();
@@ -366,11 +367,32 @@ class _DashboardPageState extends State<DashboardPage> {
                     ActivityCard(
                       activityName: 'Deep Work API Integration',
                       duration: '420 15s',
+                      isProductiveSelected: _isLastSessionProductive,
                       onProductiveTap: () {
-                        // TODO: mark as productive
+                        setState(() {
+                          _isLastSessionProductive = true;
+                        });
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Marked as productive.'),
+                              duration: Duration(milliseconds: 1200),
+                            ),
+                          );
                       },
                       onConsumptiveTap: () {
-                        // TODO: mark as consumptive
+                        setState(() {
+                          _isLastSessionProductive = false;
+                        });
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Marked as consumptive.'),
+                              duration: Duration(milliseconds: 1200),
+                            ),
+                          );
                       },
                     ),
 

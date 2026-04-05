@@ -20,12 +20,14 @@ class ActivityCard extends StatelessWidget {
     super.key,
     required this.activityName,
     required this.duration,
+    this.isProductiveSelected,
     this.onProductiveTap,
     this.onConsumptiveTap,
   });
 
   final String activityName;
   final String duration;
+  final bool? isProductiveSelected;
   final VoidCallback? onProductiveTap;
   final VoidCallback? onConsumptiveTap;
 
@@ -102,6 +104,7 @@ class ActivityCard extends StatelessWidget {
                   label: 'Productive',
                   iconAsset: 'assets/icons/dashboard/Icon-4.png',
                   isPositive: true,
+                  isSelected: isProductiveSelected == true,
                   onTap: onProductiveTap,
                 ),
               ),
@@ -112,6 +115,7 @@ class ActivityCard extends StatelessWidget {
                   label: 'Consumptive',
                   iconAsset: 'assets/icons/dashboard/Icon-5.png',
                   isPositive: false,
+                  isSelected: isProductiveSelected == false,
                   onTap: onConsumptiveTap,
                 ),
               ),
@@ -129,31 +133,42 @@ class _FeedbackButton extends StatelessWidget {
     required this.label,
     required this.iconAsset,
     required this.isPositive,
+    required this.isSelected,
     this.onTap,
   });
 
   final String label;
   final String iconAsset;
   final bool isPositive;
+  final bool isSelected;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = isPositive ? AppColors.success : AppColors.textSecondary;
+    final selectedBackground = isPositive
+      ? AppColors.success.withOpacity(0.18)
+      : AppColors.textSecondary.withOpacity(0.12);
+    final unselectedBackground = isPositive
+      ? AppColors.success.withOpacity(0.12)
+      : AppColors.surfaceVariant;
+    final selectedBorder = isPositive
+      ? AppColors.success.withOpacity(0.55)
+      : AppColors.textSecondary.withOpacity(0.45);
+    final unselectedBorder = isPositive
+      ? AppColors.success.withOpacity(0.2)
+      : AppColors.divider;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isPositive
-              ? AppColors.success.withOpacity(0.12)
-              : AppColors.surfaceVariant,
+          color: isSelected ? selectedBackground : unselectedBackground,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isPositive
-                ? AppColors.success.withOpacity(0.2)
-                : AppColors.divider,
+            color: isSelected ? selectedBorder : unselectedBorder,
+            width: isSelected ? 1.4 : 1,
           ),
         ),
         child: Row(

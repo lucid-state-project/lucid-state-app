@@ -136,8 +136,52 @@ class _AnalyticsHeader extends StatelessWidget {
   }
 }
 
-class _WeeklyAnalyticsSection extends StatelessWidget {
+class _WeeklyAnalyticsSection extends StatefulWidget {
   const _WeeklyAnalyticsSection();
+
+  @override
+  State<_WeeklyAnalyticsSection> createState() => _WeeklyAnalyticsSectionState();
+}
+
+class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
+  static const List<String> _monthShort = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
+
+  late DateTime _weekStart;
+  int _selectedDayIndex = DateTime.now().weekday - 1;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _weekStart = DateTime(now.year, now.month, now.day).subtract(
+      Duration(days: now.weekday - 1),
+    );
+  }
+
+  String _weekRangeLabel() {
+    final end = _weekStart.add(const Duration(days: 6));
+    final startMonth = _monthShort[_weekStart.month - 1];
+    final endMonth = _monthShort[end.month - 1];
+
+    if (_weekStart.month == end.month) {
+      return '$startMonth ${_weekStart.day} - ${end.day}, ${end.year}';
+    }
+
+    return '$startMonth ${_weekStart.day} - $endMonth ${end.day}, ${end.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,28 +201,62 @@ class _WeeklyAnalyticsSection extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.chevron_left, size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 3),
-                  Text(
-                    'MAY 12 - 18',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
-                      letterSpacing: 1,
-                    ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 210),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.divider),
                   ),
-                  const SizedBox(width: 3),
-                  const Icon(Icons.chevron_right, size: 14, color: AppColors.textSecondary),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _weekStart = _weekStart.subtract(const Duration(days: 7));
+                          });
+                        },
+                        child: const Icon(
+                          Icons.chevron_left,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          _weekRangeLabel(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.textSecondary,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _weekStart = _weekStart.add(const Duration(days: 7));
+                          });
+                        },
+                        child: const Icon(
+                          Icons.chevron_right,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -195,32 +273,40 @@ class _WeeklyAnalyticsSection extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: List.generate(days.length, (i) {
-                    final isSelected = i == 6;
+                    final isSelected = i == _selectedDayIndex;
                     return Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: _StackBar(
-                                productive: productive[i],
-                                passive: passive[i],
-                                isSelected: isSelected,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            _selectedDayIndex = i;
+                          });
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: _StackBar(
+                                  productive: productive[i],
+                                  passive: passive[i],
+                                  isSelected: isSelected,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            days[i],
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: isSelected
-                                  ? AppColors.primaryDark
-                                  : AppColors.textSecondary,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            const SizedBox(height: 8),
+                            Text(
+                              days[i],
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: isSelected
+                                    ? AppColors.primaryDark
+                                    : AppColors.textSecondary,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   }),

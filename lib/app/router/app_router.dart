@@ -6,14 +6,21 @@ import 'package:lucid_state_app/features/auth/presentation/pages/login_page.dart
 import 'package:lucid_state_app/features/auth/presentation/pages/register_page.dart';
 import 'package:lucid_state_app/features/configuration/presentation/pages/configuration_page.dart';
 import 'package:lucid_state_app/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:lucid_state_app/features/splash/presentation/pages/splash_page.dart';
 
 /// App-wide GoRouter instance.
 ///
 /// Initial location is [AppRoutes.login].
 /// All routes are flat (no nesting) and easy to extend.
 final GoRouter appRouter = GoRouter(
-  initialLocation: AppRoutes.login,
+  initialLocation: AppRoutes.splash,
   routes: [
+    GoRoute(
+      path: AppRoutes.splash,
+      name: AppRoutes.splashName,
+      builder: (context, state) => const SplashPage(),
+    ),
+
     // Auth routes
     GoRoute(
       path: AppRoutes.login,

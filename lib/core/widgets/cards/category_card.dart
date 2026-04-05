@@ -39,7 +39,7 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AppCard(
-        padding: const EdgeInsets.fromLTRB(24, 26, 16, 0),
+        padding: const EdgeInsets.fromLTRB(24, 26, 16, 26),
         borderRadius: 24,
         elevation: 2,
         child: Column(
@@ -47,7 +47,6 @@ class CategoryCard extends StatelessWidget {
           children: [
             Container(
               width: 40,
-              height: 40,
               decoration: BoxDecoration(
                 color: bgColor.withOpacity(0.12),
                 shape: BoxShape.circle,

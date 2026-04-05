@@ -37,7 +37,7 @@ class AppTextField extends StatefulWidget {
     this.initialValue,
     this.maxLines = 1,
     this.fillColor,
-    this.borderRadius = 12.0,
+    this.borderRadius = 32.0,
     this.contentPadding,
   });
 
@@ -150,10 +150,13 @@ class _AppTextFieldState extends State<AppTextField> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             // Leading icon
             prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    color: AppColors.textSecondary,
-                    size: 20,
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 14, right: 8),
+                    child: Icon(
+                      widget.prefixIcon,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
                   )
                 : null,
             // Password visibility toggle

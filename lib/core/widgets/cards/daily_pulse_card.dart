@@ -14,7 +14,7 @@ import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 ///   title: 'Productive',
 ///   subtitle: 'Focused Mindset',
 ///   duration: '5h 20m',
-///   icon: Icons.bolt,
+///   iconAsset: 'assets/icons/dashboard/Icon-6.png',
 ///   isGradient: true,
 /// )
 /// ```
@@ -24,42 +24,46 @@ class DailyPulseCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.duration,
-    required this.icon,
+    required this.iconAsset,
     this.isGradient = false,
   });
 
   final String title;
   final String subtitle;
   final String duration;
-  final IconData icon;
+  final String iconAsset;
 
   /// When true, renders a gradient purple background (Productive style).
   final bool isGradient;
 
   @override
   Widget build(BuildContext context) {
-    final textColor = isGradient ? Colors.white : AppColors.textPrimary;
-    final subtitleColor =
-        isGradient ? Colors.white70 : AppColors.textSecondary;
+    final titleBadgeColor =
+        isGradient ? Colors.white.withOpacity(0.18) : const Color(0xFFE8EDF5);
+    final cardTextColor = isGradient ? Colors.white : AppColors.textPrimary;
+    final subtitleColor = isGradient
+        ? Colors.white.withOpacity(0.88)
+        : const Color(0xFF64748B);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
       decoration: BoxDecoration(
         gradient: isGradient
             ? const LinearGradient(
-                colors: [AppColors.primaryDark, AppColors.primaryLight],
+                colors: [AppColors.primaryDark, AppColors.primary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : null,
-        color: isGradient ? null : AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(16),
+        color: isGradient ? null : const Color(0xFFF1F4F8),
+        borderRadius: BorderRadius.circular(32),
+        border: isGradient ? null : Border.all(color: const Color(0xFFD6DEE8)),
         boxShadow: isGradient
             ? [
                 BoxShadow(
-                  color: AppColors.primaryLight.withOpacity(0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: AppColors.primary.withOpacity(0.24),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ]
             : null,
@@ -67,48 +71,53 @@ class DailyPulseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isGradient
-                  ? Colors.white.withOpacity(0.2)
-                  : AppColors.divider,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: isGradient ? Colors.white : AppColors.textSecondary,
-            ),
+          Row(
+            children: [
+              Image.asset(
+                iconAsset,
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: titleBadgeColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  title.toUpperCase(),
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: isGradient ? Colors.white : const Color(0xFF64748B),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Duration
           Text(
-            duration,
-            style: AppTextStyles.heading3.copyWith(
-              color: textColor,
+            duration.replaceAll(' ', '\n'),
+            style: AppTextStyles.heading1.copyWith(
+              color: cardTextColor,
+              fontStyle: FontStyle.normal,
               fontWeight: FontWeight.w800,
+              height: 1.0,
             ),
           ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
 
-          // Title
           Text(
-            title,
-            style: AppTextStyles.labelLarge.copyWith(color: textColor),
-          ),
-
-          const SizedBox(height: 2),
-
-          // Subtitle
-          Text(
-            subtitle,
-            style: AppTextStyles.bodySmall.copyWith(color: subtitleColor),
+            subtitle.toUpperCase().replaceAll(' ', '\n'),
+            style: AppTextStyles.labelLarge.copyWith(
+              color: subtitleColor,
+              height: 1.15,
+              letterSpacing: 0.4,
+            ),
           ),
         ],
       ),

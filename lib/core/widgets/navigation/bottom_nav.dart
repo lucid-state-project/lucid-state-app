@@ -29,14 +29,14 @@ class DashboardBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 72,
+      height: 86,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Color(0x18000000),
-            blurRadius: 16,
-            offset: Offset(0, -4),
+            color: Color(0x10000000),
+            blurRadius: 18,
+            offset: Offset(0, -6),
           ),
         ],
       ),
@@ -44,7 +44,7 @@ class DashboardBottomNav extends StatelessWidget {
         children: [
           _NavItem(
             label: 'DASHBOARD',
-            icon: Icons.dashboard_outlined,
+            icon: currentIndex == 0 ? Icons.grid_view_rounded : Icons.dashboard_outlined,
             isActive: currentIndex == 0,
             onTap: () => onTabChanged(0),
           ),
@@ -76,53 +76,56 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isActive)
-              // Active: gradient pill containing icon + label
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryDark, AppColors.primaryLight],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, color: Colors.white, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+      child: Center(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: isActive ? 156 : 120,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: isActive
+                  ? const LinearGradient(
+                      colors: [AppColors.primaryDark, AppColors.primaryLight],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primaryLight.withOpacity(0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                  ],
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isActive
+                      ? Colors.white
+                      : const Color(0xFF93A0B7),
+                  size: 20,
                 ),
-              )
-            else ...[
-              // Inactive: plain icon + label
-              Icon(icon, color: AppColors.textSecondary, size: 22),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: isActive
+                        ? Colors.white
+                        : const Color(0xFF93A0B7),
+                    letterSpacing: 0.4,
+                  ),
                 ),
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

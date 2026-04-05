@@ -18,45 +18,59 @@ class CategoryCard extends StatelessWidget {
   const CategoryCard({
     super.key,
     required this.label,
-    required this.icon,
+    required this.subtitle,
+    required this.iconAsset,
     this.onTap,
-    this.iconColor,
+    this.iconBackgroundColor,
   });
 
   final String label;
-  final IconData icon;
+  final String subtitle;
+  final String iconAsset;
   final VoidCallback? onTap;
 
-  /// Icon foreground colour. Defaults to [AppColors.primary].
-  final Color? iconColor;
+  /// Icon background colour. Defaults to a soft gray.
+  final Color? iconBackgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final color = iconColor ?? AppColors.primary;
+    final bgColor = iconBackgroundColor ?? AppColors.divider;
 
     return GestureDetector(
       onTap: onTap,
       child: AppCard(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        padding: const EdgeInsets.fromLTRB(20, 20, 16, 4),
+        borderRadius: 24,
         elevation: 2,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: bgColor.withOpacity(0.12),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Image.asset(iconAsset, fit: BoxFit.contain),
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Text(
               label,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.labelMedium.copyWith(
+              style: AppTextStyles.heading3.copyWith(
                 color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.2,
               ),
             ),
           ],

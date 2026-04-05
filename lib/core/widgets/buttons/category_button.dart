@@ -37,41 +37,46 @@ class CategoryButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        height: 88,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [AppColors.primaryDark, AppColors.primaryLight],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                )
-              : null,
-          color: isSelected ? null : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primaryLight.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          color: isSelected
+              ? AppColors.primaryLight.withOpacity(0.08)
+              : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryLight.withOpacity(0.28)
+                : Colors.transparent,
+            width: 1,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? AppColors.primaryLight.withOpacity(0.16)
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                letterSpacing: 0.2,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

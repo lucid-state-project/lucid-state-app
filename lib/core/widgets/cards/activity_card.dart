@@ -32,78 +32,67 @@ class ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
+      elevation: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Activity row ──────────────────────────────────────────────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon badge
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryDark, AppColors.primaryLight],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.work_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       activityName,
-                      style: AppTextStyles.labelLarge.copyWith(
+                      style: AppTextStyles.heading3.copyWith(
                         color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.timer_outlined,
-                          size: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          duration,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Duration: $duration',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Image.asset(
+                    'assets/icons/dashboard/Icon-3.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 22),
 
-          const Divider(color: AppColors.divider, height: 1),
-
-          const SizedBox(height: 16),
-
-          // ── Productivity question ─────────────────────────────────────
           Text(
             'Was this session productive?',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           Row(
             children: [
@@ -111,7 +100,7 @@ class ActivityCard extends StatelessWidget {
               Expanded(
                 child: _FeedbackButton(
                   label: 'Productive',
-                  icon: Icons.thumb_up_outlined,
+                  iconAsset: 'assets/icons/dashboard/Icon-4.png',
                   isPositive: true,
                   onTap: onProductiveTap,
                 ),
@@ -121,7 +110,7 @@ class ActivityCard extends StatelessWidget {
               Expanded(
                 child: _FeedbackButton(
                   label: 'Consumptive',
-                  icon: Icons.thumb_down_outlined,
+                  iconAsset: 'assets/icons/dashboard/Icon-5.png',
                   isPositive: false,
                   onTap: onConsumptiveTap,
                 ),
@@ -138,37 +127,48 @@ class ActivityCard extends StatelessWidget {
 class _FeedbackButton extends StatelessWidget {
   const _FeedbackButton({
     required this.label,
-    required this.icon,
+    required this.iconAsset,
     required this.isPositive,
     this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final String iconAsset;
   final bool isPositive;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPositive ? AppColors.success : AppColors.error;
+    final color = isPositive ? AppColors.success : AppColors.textSecondary;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: isPositive
+              ? AppColors.success.withOpacity(0.12)
+              : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isPositive
+                ? AppColors.success.withOpacity(0.2)
+                : AppColors.divider,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: color),
+            Image.asset(
+              iconAsset,
+              width: 16,
+              height: 16,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: AppTextStyles.labelMedium.copyWith(color: color),
+              style: AppTextStyles.labelLarge.copyWith(color: color),
             ),
           ],
         ),

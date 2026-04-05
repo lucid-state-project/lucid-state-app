@@ -19,61 +19,38 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // ── Brand ────────────────────────────────────────────────────────
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Lucid Mindset',
-              style: AppTextStyles.heading2.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              width: 48,
-              height: 4,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primaryDark, AppColors.primaryLight],
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 12, 14, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.divider, width: 1),
         ),
-
-        const Spacer(),
-
-        // ── Notification bell ─────────────────────────────────────────────
-        GestureDetector(
-          onTap: onNotificationTap,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.bubble_chart_outlined, color: AppColors.primary, size: 22),
+          const SizedBox(width: 8),
+          Text(
+            'Lucid Mindset',
+            style: AppTextStyles.heading3.copyWith(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w700,
             ),
-            child: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: onNotificationTap,
+            splashRadius: 20,
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Color(0xFF6C7A91),
               size: 22,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

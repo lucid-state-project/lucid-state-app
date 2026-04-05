@@ -269,47 +269,75 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
           child: Column(
             children: [
               SizedBox(
-                height: 172,
+                height: 180,
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(days.length, (i) {
-                    final isSelected = i == _selectedDayIndex;
-                    return Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          setState(() {
-                            _selectedDayIndex = i;
-                          });
-                        },
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: _StackBar(
-                                  productive: productive[i],
-                                  passive: passive[i],
-                                  isSelected: isSelected,
-                                ),
-                              ),
+                  children: [
+                    const SizedBox(
+                      width: 26,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _YAxisLabel('8h'),
+                                _YAxisLabel('4h'),
+                                _YAxisLabel('0h'),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              days[i],
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: isSelected
-                                    ? AppColors.primaryDark
-                                    : AppColors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          SizedBox(height: 18),
+                        ],
                       ),
-                    );
-                  }),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(days.length, (i) {
+                          final isSelected = i == _selectedDayIndex;
+                          return Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  _selectedDayIndex = i;
+                                });
+                              },
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: _StackBar(
+                                        productive: productive[i],
+                                        passive: passive[i],
+                                        isSelected: isSelected,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    days[i],
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: isSelected
+                                          ? AppColors.primaryDark
+                                          : AppColors.textSecondary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -345,7 +373,7 @@ class _StackBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const max = 8.0;
-    const h = 126.0;
+    const h = 138.0;
     final productiveH = (productive / max) * h;
     final passiveH = (passive / max) * h;
     final topGapH = h - productiveH - passiveH;
@@ -410,6 +438,23 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+class _YAxisLabel extends StatelessWidget {
+  const _YAxisLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTextStyles.labelSmall.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
 class _DailyJourneySection extends StatelessWidget {
   const _DailyJourneySection();
 
@@ -455,7 +500,7 @@ class _DailyJourneySection extends StatelessWidget {
         const SizedBox(height: 14),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(26, 24, 26, 24),
+          padding: const EdgeInsets.fromLTRB(26, 20, 26, 20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [AppColors.primaryDark, AppColors.primaryLight],
@@ -500,7 +545,7 @@ class _DailyJourneySection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               Text(
                 '+450',
                 style: AppTextStyles.heading.copyWith(
@@ -510,7 +555,7 @@ class _DailyJourneySection extends StatelessWidget {
                   height: 0.95,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               Row(
                 children: const [
                   Expanded(
@@ -539,10 +584,10 @@ class _MiniBalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Column(
@@ -555,7 +600,7 @@ class _MiniBalanceCard extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           Text(
             value,
             style: AppTextStyles.heading2.copyWith(
@@ -563,23 +608,28 @@ class _MiniBalanceCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 0.72,
-              child: Container(
+          const SizedBox(height: 12),
+          Stack(
+            children: [
+              Container(
+                height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.75),
+                  color: Colors.white.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-            ),
+              FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: 0.72,
+                child: Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -615,7 +665,7 @@ class _TimelineSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         const _TimelineItem(
           iconAsset: 'assets/icons/Analytic/Icon.png',
           title: 'Deep Study',
@@ -624,7 +674,7 @@ class _TimelineSection extends StatelessWidget {
           scoreColor: AppColors.primaryDark,
           duration: '45 MINS',
         ),
-        const SizedBox(height: 10),
+                const SizedBox(height: 20),
         const _TimelineItem(
           iconAsset: 'assets/icons/Analytic/Icon-1.png',
           title: 'Instagram Scrolling',
@@ -633,7 +683,7 @@ class _TimelineSection extends StatelessWidget {
           scoreColor: Color(0xFFDC2626),
           duration: '25 MINS',
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         const _TimelineItem(
           iconAsset: 'assets/icons/Analytic/Icon-2.png',
           title: 'Morning Meditation',
@@ -642,7 +692,7 @@ class _TimelineSection extends StatelessWidget {
           scoreColor: AppColors.primaryLight,
           duration: '20 MINS',
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         const _TimelineItem(
           iconAsset: 'assets/icons/Analytic/Icon-3.png',
           title: 'YouTube Spiral',

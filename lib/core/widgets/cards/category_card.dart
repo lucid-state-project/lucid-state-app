@@ -44,9 +44,11 @@ class CategoryCard extends StatelessWidget {
         elevation: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: bgColor.withOpacity(0.12),
                 shape: BoxShape.circle,
@@ -56,20 +58,24 @@ class CategoryCard extends StatelessWidget {
                 child: Image.asset(iconAsset, fit: BoxFit.contain),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.heading3.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
-                height: 1.6,
+                height: 1.3,
               ),
             ),
           ],

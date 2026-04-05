@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucid_state_app/app/router/routes.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
+import 'package:lucid_state_app/core/services/timer_service.dart';
 import 'package:lucid_state_app/core/widgets/index.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -23,18 +25,26 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isNavigating = false;
   int _navPreviewIndex = 0;
   bool? _isLastSessionProductive;
-  bool _isFlowRunning = false;
-  String _currentActivityName = '';
-  int _elapsedSeconds = 0;
-  int _totalDurationSeconds = 0; // For Set Duration countdown
-  Timer? _sessionTimer;
-  bool _isSessionPaused = false;
   final _activityController = TextEditingController();
   final _durationController = TextEditingController(text: '25');
   final _durationFocusNode = FocusNode();
 
+  @override
+  void initState() {
+    super.initState();
+    // Hide overlay when on dashboard
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<TimerService>().hideOverlay();
+      }
+    });
+  }
+
   Future<void> _navigateWithLoading(String route, int targetIndex) async {
     if (_isNavigating || targetIndex == 0) return;
+
+    // Show overlay when navigating away from dashboard
+    context.read<TimerService>().showOverlay();
 
     setState(() {
       _isNavigating = true;
@@ -48,40 +58,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
-    _sessionTimer?.cancel();
     _activityController.dispose();
     _durationController.dispose();
     _durationFocusNode.dispose();
     super.dispose();
   }
 
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes}m ${secs}s';
-  }
-
-  String _getDisplayDuration() {
-    if (_isSetDuration && _totalDurationSeconds > 0) {
-      // Countdown timer
-      final remaining = _totalDurationSeconds - _elapsedSeconds;
-      final minutes = remaining ~/ 60;
-      final secs = remaining % 60;
-      return '${minutes}m ${secs}s';
-    } else {
-      // Count-up timer
-      return _formatDuration(_elapsedSeconds);
-    }
-  }
-
-  void _adjustDuration(int minutesDelta) {
-    setState(() {
-      _totalDurationSeconds += (minutesDelta * 60);
-      if (_totalDurationSeconds < 60) {
-        _totalDurationSeconds = 60; // Minimum 1 minute
-      }
-    });
-  }
 
   // ── Category data ──────────────────────────────────────────────────────────
 
@@ -140,45 +122,47 @@ class _DashboardPageState extends State<DashboardPage> {
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 420),
-                            reverseDuration: const Duration(milliseconds: 320),
-                            layoutBuilder: (widget, list) =>
-                                widget ?? const SizedBox(),
-                            transitionBuilder: (child, animation) {
-                              // Entry animation - subtle fade + scale only
-                              final fadeAnimation =
-                                  Tween<double>(begin: 0.0, end: 1.0).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutQuint,
+                      child: Consumer<TimerService>(
+                        builder: (context, timerService, _) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 420),
+                                reverseDuration: const Duration(milliseconds: 320),
+                                layoutBuilder: (widget, list) =>
+                                    widget ?? const SizedBox(),
+                                transitionBuilder: (child, animation) {
+                                  // Entry animation - subtle fade + scale only
+                                  final fadeAnimation =
+                                      Tween<double>(begin: 0.0, end: 1.0).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutQuint,
+                                        ),
+                                      );
+
+                                  // Subtle scale effect
+                                  final scaleAnimation =
+                                      Tween<double>(begin: 0.92, end: 1.0).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutQuart,
+                                        ),
+                                      );
+
+                                  return FadeTransition(
+                                    opacity: fadeAnimation,
+                                    child: ScaleTransition(
+                                      scale: scaleAnimation,
+                                      child: child,
                                     ),
                                   );
-
-                              // Subtle scale effect
-                              final scaleAnimation =
-                                  Tween<double>(begin: 0.92, end: 1.0).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutQuart,
-                                    ),
-                                  );
-
-                              return FadeTransition(
-                                opacity: fadeAnimation,
-                                child: ScaleTransition(
-                                  scale: scaleAnimation,
-                                  child: child,
-                                ),
-                              );
-                            },
-                            child: _isFlowRunning
-                                ? _buildCurrentActivityCard()
-                                : _buildNewActivityCard(),
-                          ),
+                                },
+                                child: timerService.isRunning
+                                    ? _buildCurrentActivityCard()
+                                    : _buildNewActivityCard(),
+                              ),
 
                           const SizedBox(height: 24),
 
@@ -309,7 +293,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisSpacing: 14,
                             mainAxisSpacing: 14,
-                            childAspectRatio: 1.02,
+                            childAspectRatio: 0.85,
                             children: _gridCategories.map((cat) {
                               return CategoryCard(
                                 label: cat['label'] as String,
@@ -329,8 +313,10 @@ class _DashboardPageState extends State<DashboardPage> {
                           // ── DAILY REFLECTION quote ────────────────────────────
                           _buildQuoteSection(),
 
-                          const SizedBox(height: 16),
-                        ],
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -628,42 +614,16 @@ class _DashboardPageState extends State<DashboardPage> {
                   onTap: () {
                     final durationMinutes =
                         int.tryParse(_durationController.text) ?? 25;
-                    setState(() {
-                      _isFlowRunning = true;
-                      _currentActivityName = _activityController.text.isEmpty
+                    final timerService =
+                        context.read<TimerService>();
+                    
+                    timerService.startTimer(
+                      activityName: _activityController.text.isEmpty
                           ? 'Deep Work API Integration'
-                          : _activityController.text;
-                      _elapsedSeconds = 0;
-                      _isSessionPaused = false;
-                      // Set total duration for countdown (Set Duration mode)
-                      _totalDurationSeconds = _isSetDuration
-                          ? durationMinutes * 60
-                          : 0; // 0 means count-up (Open Timer)
-                    });
-
-                    // Start timer
-                    _sessionTimer?.cancel();
-                    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (
-                      timer,
-                    ) {
-                      if (!_isSessionPaused) {
-                        setState(() {
-                          _elapsedSeconds++;
-                          // Check if timer finished for Set Duration mode
-                          if (_isSetDuration &&
-                              _totalDurationSeconds > 0 &&
-                              _elapsedSeconds >= _totalDurationSeconds) {
-                            _sessionTimer?.cancel();
-                            _isFlowRunning = false;
-                            _activityController.clear();
-                            _durationController.text = '25';
-                            _elapsedSeconds = 0;
-                            _totalDurationSeconds = 0;
-                            _isSessionPaused = false;
-                          }
-                        });
-                      }
-                    });
+                          : _activityController.text,
+                      durationMinutes: durationMinutes,
+                      isSetDuration: _isSetDuration,
+                    );
                   },
                   child: Center(
                     child: Row(
@@ -695,117 +655,124 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildCurrentActivityCard() {
-    return Stack(
-      children: [
-        // Background Container
-        Container(
-          key: const ValueKey('current-activity'),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [const Color(0xFF15157D), const Color(0xFF841CD8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF841CD8).withOpacity(0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Label with circle indicator
-              Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'CURRENT ACTIVITY',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: Colors.white.withOpacity(0.85),
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w600,
-                    ),
+    return Consumer<TimerService>(
+      builder: (context, timerService, _) {
+        // Only show if timer is running
+        if (!timerService.isRunning) {
+          return const SizedBox.shrink();
+        }
+
+        return Stack(
+          children: [
+            // Background Container
+            Container(
+              key: const ValueKey('current-activity'),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [const Color(0xFF15157D), const Color(0xFF841CD8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF841CD8).withOpacity(0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              // Activity name
-              Text(
-                _currentActivityName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.heading1.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Session duration with adjustment buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Label with circle indicator
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'CURRENT ACTIVITY',
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: Colors.white.withOpacity(0.85),
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  // Activity name
                   Text(
-                    'Session duration: ${_getDisplayDuration()}',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: Colors.white.withOpacity(0.75),
-                      fontWeight: FontWeight.w400,
+                    timerService.currentActivityName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.heading1.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      height: 1.2,
                     ),
                   ),
-                  if (_isSetDuration)
-                    Row(
-                      children: [
-                        // -5m button
-                        GestureDetector(
-                          onTap: () => _adjustDuration(-5),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.4),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '-5m',
-                                style: AppTextStyles.labelSmall.copyWith(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11,
+                  const SizedBox(height: 10),
+                  // Session duration with adjustment buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Session duration: ${timerService.getDisplayDuration()}',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: Colors.white.withOpacity(0.75),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      if (timerService.isSetDuration)
+                        Row(
+                          children: [
+                            // -5m button
+                            GestureDetector(
+                              onTap: () => timerService.adjustDuration(-5),
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.4),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '-5m',
+                                    style: AppTextStyles.labelSmall.copyWith(
+                                      color: Colors.white.withOpacity(0.85),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // +5m button
-                        GestureDetector(
-                          onTap: () => _adjustDuration(5),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.4),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
+                            const SizedBox(width: 8),
+                            // +5m button
+                            GestureDetector(
+                              onTap: () => timerService.adjustDuration(5),
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.4),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
@@ -831,11 +798,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isSessionPaused = !_isSessionPaused;
-                        });
-                      },
+                      onTap: () => timerService.pauseTimer(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
@@ -853,7 +816,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              _isSessionPaused
+                              timerService.isPaused
                                   ? Icons.play_arrow_rounded
                                   : Icons.pause_rounded,
                               size: 20,
@@ -861,7 +824,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _isSessionPaused ? 'Resume' : 'Pause',
+                              timerService.isPaused ? 'Resume' : 'Pause',
                               style: AppTextStyles.labelLarge.copyWith(
                                 color: const Color(0xFF2E1A66),
                                 fontWeight: FontWeight.w700,
@@ -876,15 +839,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
-                        _sessionTimer?.cancel();
-                        setState(() {
-                          _isFlowRunning = false;
-                          _activityController.clear();
-                          _durationController.text = '25';
-                          _elapsedSeconds = 0;
-                          _totalDurationSeconds = 0;
-                          _isSessionPaused = false;
-                        });
+                        timerService.stopTimer();
+                        _activityController.clear();
+                        _durationController.text = '25';
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -922,8 +879,8 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
-        // Lightning Icon Background
-        Positioned(
+            // Lightning Icon Background
+            Positioned(
           right: -20,
           top: -20,
           child: Icon(
@@ -933,6 +890,8 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }

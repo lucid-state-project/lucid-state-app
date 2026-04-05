@@ -29,12 +29,18 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.dashboard,
       name: AppRoutes.dashboardName,
-      builder: (context, state) => const DashboardPage(),
+      pageBuilder: (context, state) => NoTransitionPage<void>(
+        key: state.pageKey,
+        child: const DashboardPage(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.analytics,
       name: AppRoutes.analyticsName,
-      builder: (context, state) => const AnalyticsPage(),
+      pageBuilder: (context, state) => NoTransitionPage<void>(
+        key: state.pageKey,
+        child: const AnalyticsPage(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.configuration,

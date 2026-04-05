@@ -19,9 +19,24 @@ class _DashboardPageState extends State<DashboardPage> {
 
   int _selectedCategoryIndex = 0;
   bool _isSetDuration = true; // true = Set Duration, false = Open Timer
+  bool _isNavigating = false;
+  int _navPreviewIndex = 0;
   final _activityController = TextEditingController();
   final _durationController = TextEditingController(text: '25');
   final _durationFocusNode = FocusNode();
+
+  Future<void> _navigateWithLoading(String route, int targetIndex) async {
+    if (_isNavigating || targetIndex == 0) return;
+
+    setState(() {
+      _isNavigating = true;
+      _navPreviewIndex = targetIndex;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    context.go(route);
+  }
 
   @override
   void dispose() {
@@ -74,24 +89,28 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            DashboardHeader(
-              onNotificationTap: () {
-                // TODO: open notifications
-              },
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  18,
-                  16,
-                  20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            AbsorbPointer(
+              absorbing: _isNavigating,
+              child: Column(
+                children: [
+                  DashboardHeader(
+                    onNotificationTap: () {
+                      // TODO: open notifications
+                    },
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        16,
+                        18,
+                        16,
+                        20,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     AppCard(
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                       borderRadius: 30,
@@ -425,7 +444,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         _buildSectionLabel('ACTIVITY CATEGORIES'),
                         GestureDetector(
-                          onTap: () => context.go(AppRoutes.analytics),
+                          onTap: () => _navigateWithLoading(
+                            AppRoutes.analytics,
+                            1,
+                          ),
                           child: Text(
                             'View Analysis',
                             style: AppTextStyles.labelMedium.copyWith(
@@ -449,7 +471,10 @@ class _DashboardPageState extends State<DashboardPage> {
                           subtitle: cat['subtitle'] as String,
                           iconAsset: cat['iconAsset'] as String,
                           iconBackgroundColor: cat['color'] as Color,
-                          onTap: () => context.go(AppRoutes.analytics),
+                          onTap: () => _navigateWithLoading(
+                            AppRoutes.analytics,
+                            1,
+                          ),
                         );
                       }).toList(),
                     ),
@@ -460,18 +485,35 @@ class _DashboardPageState extends State<DashboardPage> {
                     _buildQuoteSection(),
 
                     const SizedBox(height: 16),
-                  ],
-                ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Bottom navigation ─────────────────────────────────────────
+                  DashboardBottomNav(
+                    currentIndex: _isNavigating ? _navPreviewIndex : 0,
+                    onTabChanged: (i) {
+                      if (i == 1) {
+                        _navigateWithLoading(AppRoutes.analytics, 1);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
-
-            // ── Bottom navigation ─────────────────────────────────────────
-            DashboardBottomNav(
-              currentIndex: 0,
-              onTabChanged: (i) {
-                if (i == 1) context.go(AppRoutes.analytics);
-              },
-            ),
+            if (_isNavigating)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.08),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

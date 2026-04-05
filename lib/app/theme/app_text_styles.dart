@@ -6,6 +6,15 @@ class AppTextStyles {
   static const String _fontFamily = 'PlusJakartaSans';
 
   // Headings
+  static const TextStyle heading = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 36,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w900,
+    height: 1.2,
+  );
+
+  // Headings
   static const TextStyle heading1 = TextStyle(
     fontFamily: _fontFamily,
     fontSize: 36,

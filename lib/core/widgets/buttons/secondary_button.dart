@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
+import 'package:lucid_state_app/core/constants/app_spacing.dart';
 
-/// A secondary (outlined / white background) button.
+/// A versatile secondary button with optional icon support.
 ///
-/// Used for alternative actions such as "Continue with Google".
-/// Optionally displays a leading icon (e.g., a social logo).
+/// Renders an outlined button with customizable styling. Can display
+/// a leading widget (icon or image) and supports both social and
+/// regular secondary actions.
+///
+/// Example:
+/// ```dart
+/// SecondaryButton(
+///   text: 'Continue with Google',
+///   onPressed: _handleGoogleSignIn,
+///   icon: Image.asset('assets/icons/google.png'),
+/// )
+/// ```
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({
     super.key,
     required this.text,
     required this.onPressed,
     this.icon,
+    this.iconAsset,
     this.width = double.infinity,
     this.height = 52.0,
-    this.borderRadius = 24.0,
+    this.borderRadius = AppSpacing.radiusXl,
     this.backgroundColor = AppColors.surface,
     this.foregroundColor = AppColors.textPrimary,
     this.borderColor = AppColors.divider,
@@ -31,32 +43,47 @@ class SecondaryButton extends StatelessWidget {
   /// Optional leading widget (e.g., an [Image] or [Icon]).
   final Widget? icon;
 
+  /// Optional path to image asset (e.g., for social logos).
+  /// Ignored if [icon] is provided.
+  final String? iconAsset;
+
   /// Width of the button. Defaults to [double.infinity] (full width).
   final double width;
 
-  /// Height of the button.
+  /// Height of the button. Defaults to 52.0.
   final double height;
 
-  /// Corner radius of the button.
+  /// Corner radius of the button. Defaults to [AppSpacing.radiusXl].
   final double borderRadius;
 
-  /// Button background color.
+  /// Button background color. Defaults to [AppColors.surface].
   final Color backgroundColor;
 
-  /// Button foreground (text/icon) color.
+  /// Button foreground (text/icon) color. Defaults to [AppColors.textPrimary].
   final Color foregroundColor;
 
-  /// Border color.
+  /// Border color. Defaults to [AppColors.divider].
   final Color borderColor;
 
-  /// Border stroke width.
+  /// Border stroke width. Defaults to 1.5.
   final double borderWidth;
 
   /// Override the default button label text style.
   final TextStyle? textStyle;
 
+  /// Builds the leading icon widget.
+  Widget? _buildIcon() {
+    if (icon != null) return icon;
+    if (iconAsset != null) {
+      return Image.asset(iconAsset!, width: 24, height: 24);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final leadingIcon = _buildIcon();
+
     return SizedBox(
       width: width,
       height: height,
@@ -70,21 +97,21 @@ class SecondaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: AppSpacing.paddingHorizontalLg,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[
-              icon!,
-              const SizedBox(width: 10),
+            if (leadingIcon != null) ...[
+              leadingIcon,
+              const SizedBox(width: AppSpacing.md),
             ],
             Text(
-  text,
-  style: textStyle ?? AppTextStyles.button.copyWith(
-    color: foregroundColor,
-  ),
-),
+              text,
+              style: textStyle ?? AppTextStyles.button.copyWith(
+                color: foregroundColor,
+              ),
+            ),
           ],
         ),
       ),

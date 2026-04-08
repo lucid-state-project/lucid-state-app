@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:lucid_state_app/app/theme/app_colors.dart';
-import 'package:lucid_state_app/app/theme/app_text_styles.dart';
+import 'package:lucid_state_app/core/widgets/buttons/secondary_button.dart';
 
-/// A button for social sign-in flows (e.g., "Continue with Google").
+/// Deprecated: Use [SecondaryButton] instead.
 ///
-/// Renders a bordered white pill-shaped button with an optional leading
-/// image asset and a label.
+/// [SocialButton] is now an alias for [SecondaryButton] with
+/// social-oriented defaults. This class is maintained for backward
+/// compatibility and will be removed in a future version.
+@Deprecated('Use SecondaryButton instead. This class will be removed in v2.0.0')
 class SocialButton extends StatelessWidget {
+  /// Creates a social button. Use [SecondaryButton] instead.
   const SocialButton({
     super.key,
     required this.text,
@@ -25,10 +27,11 @@ class SocialButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   /// Path to an image asset for the social logo (e.g., Google logo PNG).
-  /// Ignored if [iconWidget] is provided.
+  /// Use [SecondaryButton.iconAsset] parameter instead.
   final String? iconAsset;
 
   /// Custom icon widget. Takes precedence over [iconAsset].
+  /// Use [SecondaryButton.icon] parameter instead.
   final Widget? iconWidget;
 
   /// Width of the button.
@@ -40,49 +43,16 @@ class SocialButton extends StatelessWidget {
   /// Corner radius.
   final double borderRadius;
 
-  Widget? _buildIcon() {
-    if (iconWidget != null) return iconWidget;
-    if (iconAsset != null) {
-      return Image.asset(iconAsset!, width: 24, height: 24);
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final icon = _buildIcon();
-
-    return SizedBox(
+    return SecondaryButton(
+      text: text,
+      onPressed: onPressed,
+      icon: iconWidget,
+      iconAsset: iconAsset,
       width: width,
       height: height,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.divider, width: 1.5),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              icon,
-              const SizedBox(width: 10),
-            ],
-            Text(
-              text,
-              style: AppTextStyles.button.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
+      borderRadius: borderRadius,
     );
   }
 }

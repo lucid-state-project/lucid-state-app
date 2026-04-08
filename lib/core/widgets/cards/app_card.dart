@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
+import 'package:lucid_state_app/core/constants/app_spacing.dart';
 
 /// A generic rounded card container.
 ///
@@ -13,11 +14,12 @@ import 'package:lucid_state_app/app/theme/app_colors.dart';
 /// )
 /// ```
 class AppCard extends StatelessWidget {
+  /// Creates a custom card.
   const AppCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
-    this.borderRadius = 16.0,
+    this.borderRadius = AppSpacing.radiusLg,
     this.color = AppColors.surface,
     this.elevation = 4.0,
     this.shadowColor,
@@ -30,19 +32,19 @@ class AppCard extends StatelessWidget {
   /// The widget placed inside the card.
   final Widget child;
 
-  /// Inner padding around [child].
+  /// Inner padding around [child]. Defaults to 20 all sides.
   final EdgeInsetsGeometry padding;
 
-  /// Corner radius.
+  /// Corner radius. Defaults to [AppSpacing.radiusLg].
   final double borderRadius;
 
-  /// Card background color.
+  /// Card background color. Defaults to [AppColors.surface].
   final Color color;
 
-  /// Shadow elevation (Material shadow depth).
+  /// Shadow elevation (Material shadow depth). Defaults to 4.0.
   final double elevation;
 
-  /// Shadow color override. Defaults to a subtle black shadow.
+  /// Shadow color override. Defaults to subtle black shadow.
   final Color? shadowColor;
 
   /// Optional explicit border.

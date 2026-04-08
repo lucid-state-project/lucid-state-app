@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
+import 'package:lucid_state_app/core/constants/app_spacing.dart';
 
 /// A compact icon + label button used in the "NEW ACTIVITY" section to choose
 /// an activity category (FOCUS, LEARNING, SOCIAL, FUN, etc.).
@@ -38,12 +39,15 @@ class CategoryButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 88,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.sm + 2,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primaryLight.withOpacity(0.08)
               : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: isSelected
                 ? AppColors.primaryLight.withOpacity(0.28)
@@ -69,7 +73,7 @@ class CategoryButton extends StatelessWidget {
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               label,
               style: AppTextStyles.labelSmall.copyWith(

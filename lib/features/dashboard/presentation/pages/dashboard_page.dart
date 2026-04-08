@@ -359,6 +359,8 @@ class _DashboardPageState extends State<DashboardPage> {
       style: AppTextStyles.labelSmall.copyWith(
         color: AppColors.textSecondary,
         letterSpacing: 1.2,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

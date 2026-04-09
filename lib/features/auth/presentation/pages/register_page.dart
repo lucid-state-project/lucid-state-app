@@ -4,6 +4,10 @@ import 'package:lucid_state_app/app/router/routes.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 import 'package:lucid_state_app/core/widgets/index.dart';
+import 'package:lucid_state_app/core/api/exceptions.dart';
+import 'package:lucid_state_app/core/services/local_storage_service.dart';
+import 'package:lucid_state_app/data/repositories/auth_repository.dart';
+import 'package:lucid_state_app/domain/usecases/auth_usecases.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,36 +17,117 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // ── Form & Controllers
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+
+  // ── Repository & Use Cases
+  late final AuthRepository _authRepository;
+  late final RegisterUseCase _registerUseCase;
+
+  // ── State
+  bool _isLoading = false;
   bool _agreedToTerms = false;
 
   @override
+  void initState() {
+    super.initState();
+    _authRepository = AuthRepositoryImpl();
+    _registerUseCase = RegisterUseCase(_authRepository);
+  }
+
+  @override
   void dispose() {
-    _fullNameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _onCreateAccount() {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (!_agreedToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please agree to the Terms & Conditions and Privacy Policy',
-            ),
-          ),
-        );
-        return;
-      }
-      context.go(AppRoutes.dashboard);
+  /// Handle user registration via API
+  /// 
+  /// Flow:
+  /// 1. Check jika ada saved guest user_id (dari guest login sebelumnya)
+  /// 2. Jika ada, pass sebagai userId untuk UPGRADE dari guest account
+  /// 3. Jika tidak ada, register sebagai user baru biasa
+  Future<void> _handleRegister() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
     }
+
+    if (!_agreedToTerms) {
+      _showErrorSnackBar('Please agree to the Terms & Conditions and Privacy Policy');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 🔍 Check apakah ada saved guest user_id
+      final localStorage = LocalStorageService();
+      final savedGuestUserId = localStorage.getGuestUserId();
+      
+      if (savedGuestUserId != null) {
+        print('♻️ Upgrading guest account: $savedGuestUserId');
+      } else {
+        print('🆕 Register as new user');
+      }
+
+      final authResponse = await _registerUseCase.call(
+        RegisterParams(
+          userId: savedGuestUserId,  // ← Akan null jika user baru, atau guest UUID jika upgrade
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
+
+      if (mounted) {
+        print('✅ Registration successful: ${authResponse.email}');
+        
+        // 🗑️ Clear saved guest user_id setelah upgrade berhasil
+        if (savedGuestUserId != null) {
+          await localStorage.clearGuestUserId();
+        }
+        
+        context.go(AppRoutes.dashboard);
+      }
+    } on ValidationException catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(e.message);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(e.message);
+      }
+    } on NetworkException {
+      if (mounted) {
+        _showErrorSnackBar('No internet connection. Please try again.');
+      }
+    } catch (e) {
+      if (mounted) {
+        print('\u274c Register error: $e');
+        print('Stack trace: ${StackTrace.current}');
+        _showErrorSnackBar('Error: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Show error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[600],
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -90,17 +175,20 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                        const SizedBox(height: 24),
   // Subtitle
-                      // Full Name field
+                      // Username field
                       AppTextField(
-                        label: 'FULL NAME',
-                        hint: 'Enter your full name',
+                        label: 'USERNAME',
+                        hint: 'Choose your username',
                         prefixIcon: Icons.person_outline,
-                        controller: _fullNameController,
+                        controller: _usernameController,
                         keyboardType: TextInputType.name,
                         textInputAction: TextInputAction.next,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your full name';
+                            return 'Please enter a username';
+                          }
+                          if (value.length < 3) {
+                            return 'Username must be at least 3 characters';
                           }
                           return null;
                         },
@@ -139,35 +227,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         prefixIcon: Icons.lock_outline,
                         controller: _passwordController,
                         isPassword: true,
-                        textInputAction: TextInputAction.next,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _handleRegister(),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
-                          if (value.length < 8) {
-                            return 'Password must be at least 8 characters';
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Confirm Password field
-                      AppTextField(
-                        label: 'CONFIRM PASSWORD',
-                        hint: 'Confirm your password',
-                        prefixIcon: Icons.lock_outline,
-                        controller: _confirmPasswordController,
-                        isPassword: true,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _onCreateAccount(),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please confirm your password';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
                           }
                           return null;
                         },
@@ -205,7 +272,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       // CREATE ACCOUNT button
                       PrimaryButton(
                         text: 'CREATE ACCOUNT',
-                        onPressed: _onCreateAccount,
+                        onPressed: _handleRegister,
+                        isLoading: _isLoading,
                       ),
                     ],
                   ),

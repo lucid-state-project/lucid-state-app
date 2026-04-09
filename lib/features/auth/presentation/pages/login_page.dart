@@ -4,6 +4,10 @@ import 'package:lucid_state_app/app/router/routes.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 import 'package:lucid_state_app/core/widgets/index.dart';
+import 'package:lucid_state_app/core/api/exceptions.dart';
+import 'package:lucid_state_app/core/services/local_storage_service.dart';
+import 'package:lucid_state_app/data/repositories/auth_repository.dart';
+import 'package:lucid_state_app/domain/usecases/auth_usecases.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,9 +17,42 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  // ── Form & Controllers
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // ── Repository & Use Cases
+  late final AuthRepository _authRepository;
+  late final LoginUseCase _loginUseCase;
+  late final GuestLoginUseCase _guestLoginUseCase;
+
+  // ── Loading & Error States
+  bool _isLoadingLogin = false;
+  bool _isLoadingGuest = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ── Initialize repository dan use cases
+    _authRepository = AuthRepositoryImpl();
+    _loginUseCase = LoginUseCase(_authRepository);
+    _guestLoginUseCase = GuestLoginUseCase(_authRepository);
+    
+    // ── Initialize local storage untuk guest user_id persistence
+    _initializeLocalStorage();
+  }
+
+  /// Initialize local storage service
+  /// Harus di-call sekali saat app startup
+  Future<void> _initializeLocalStorage() async {
+    try {
+      await LocalStorageService().init();
+      print('✅ Local storage initialized');
+    } catch (e) {
+      print('❌ Error initializing local storage: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -24,21 +61,111 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _onSignIn() {
-    if (_formKey.currentState?.validate() ?? false) {
-      context.go(AppRoutes.dashboard);
+  /// Handle login dengan email & password
+  /// Validasi form → Call API (/auth/login) → Navigate ke dashboard
+  Future<void> _handleLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingLogin = true;
+    });
+
+    try {
+      final authResponse = await _loginUseCase.call(
+        LoginParams(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
+
+      if (mounted) {
+        print('✅ Login successful: ${authResponse.email}');
+        context.go(AppRoutes.dashboard);
+      }
+    } on ValidationException catch (e) {
+      if (mounted) {
+        // Field errors: e.errors contains field-specific error messages
+        _showErrorSnackBar(e.message);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        _showErrorSnackBar(e.message);
+      }
+    } on NetworkException catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Network error: ${e.message}');
+      }
+    } catch (e) {
+      if (mounted) {
+        print('\u274c Login error: $e');
+        print('Stack trace: ${StackTrace.current}');
+        _showErrorSnackBar('Error: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingLogin = false;
+        });
+      }
     }
   }
 
-  void _onContinueWithGuest() {
-    // TODO: Implement Google sign-in
-    context.go(AppRoutes.dashboard);
+  /// Handle guest login (POST /auth/guest)
+  /// 
+  /// Flow:
+  /// 1. Check apakah sudah ada saved guest user_id
+  /// 2. Jika ada → kirim ke API (untuk reuse existing account)
+  /// 3. Jika tidak ada → kirim request kosong (API generate user_id baru)
+  /// 4. Save user_id dari response ke local storage
+  /// 5. Navigate ke dashboard
+  Future<void> _handleGuestLogin() async {
+    setState(() {
+      _isLoadingGuest = true;
+    });
+
+    try {
+      final authResponse = await _guestLoginUseCase.call(
+        GuestLoginParams(),
+      );
+
+      if (mounted) {
+        print('✅ Guest login successful');
+        print('   └─ User ID: ${authResponse.userId}');
+        print('   └─ Is Guest: ${authResponse.isGuest}');
+        context.go(AppRoutes.dashboard);
+      }
+    } on NetworkException {
+      if (mounted) {
+        _showErrorSnackBar('No internet connection');
+      }
+    } catch (e) {
+      if (mounted) {
+        print('❌ Error: $e');
+        _showErrorSnackBar('Failed to login as guest');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingGuest = false;
+        });
+      }
+    }
   }
 
-  void _onContinueWithGoogle() {
-    // TODO: Implement Google sign-in
-    context.go(AppRoutes.dashboard);
+  /// Show error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[600],
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _passwordController,
                         isPassword: true,
                         textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _onSignIn(),
+                        onFieldSubmitted: (_) => _handleLogin(),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your password';
@@ -126,7 +253,8 @@ class _LoginPageState extends State<LoginPage> {
                       // Sign In button
                       PrimaryButton(
                         text: 'Sign In',
-                        onPressed: _onSignIn,
+                        onPressed: _handleLogin,
+                        isLoading: _isLoadingLogin,
                       ),
 
                       const SizedBox(height: 24),
@@ -138,20 +266,30 @@ class _LoginPageState extends State<LoginPage> {
 
                       // Continue with Guest button
                       SecondaryButton(
-                        borderColor:  AppColors.primaryLight,
-                        text: 'Continue with Guest',
-                        textStyle: AppTextStyles.button.copyWith(
-                          color: AppColors.primaryLight,
-                        ),
-                        onPressed: _onContinueWithGuest,
+                        text: 'Continue as Guest',
+                        onPressed: _isLoadingGuest ? null : _handleGuestLogin,
+                        icon: _isLoadingGuest
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary,
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.person_outline),
                       ),
 
                       const SizedBox(height: 24),
 
-                      // Continue with Google button
+                      // Continue with Google button (TODO)
                       SecondaryButton(
                         text: 'Continue with Google',
-                        onPressed: _onContinueWithGoogle,
+                        onPressed: () {
+                          _showErrorSnackBar('Google login coming soon');
+                        },
                         icon: Image.asset(
                           'assets/icons/login/SVG.png',
                           width: 22,

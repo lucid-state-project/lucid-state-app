@@ -41,6 +41,12 @@ dependencies:
   # State Management
   provider: ^6.1.5+1
 
+  # HTTP Client
+  dio: ^5.4.0
+
+  # Local Storage
+  shared_preferences: ^2.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

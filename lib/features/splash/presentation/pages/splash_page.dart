@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucid_state_app/app/router/routes.dart';
+import 'package:lucid_state_app/core/services/local_storage_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -137,7 +138,20 @@ class _SplashPageState extends State<SplashPage>
     }
 
     _hasNavigated = true;
-    context.go(AppRoutes.login);
+    
+    // 🔍 Check apakah sudah ada user_id tersimpan (sudah pernah login)
+    final localStorage = LocalStorageService();
+    final savedUserId = localStorage.getGuestUserId();
+    
+    if (savedUserId != null) {
+      print('✅ User already logged in (guest): $savedUserId');
+      print('   → Redirect ke dashboard');
+      context.go(AppRoutes.dashboard);
+    } else {
+      print('⚠️ No saved user_id found');
+      print('   → Redirect ke login');
+      context.go(AppRoutes.login);
+    }
   }
 
   @override

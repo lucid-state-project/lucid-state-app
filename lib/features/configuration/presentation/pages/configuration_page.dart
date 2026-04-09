@@ -4,6 +4,7 @@ import 'package:lucid_state_app/app/router/routes.dart';
 import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 import 'package:lucid_state_app/core/widgets/cards/app_card.dart';
+import 'package:lucid_state_app/core/services/local_storage_service.dart';
 
 class ConfigurationPage extends StatefulWidget {
   const ConfigurationPage({super.key});
@@ -16,6 +17,37 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
   bool _notifications = true;
   bool _darkMode = false;
   bool _quietHours = true;
+  
+  // ── User data
+  String _username = 'User';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  /// Ambil username dari local storage
+  Future<void> _loadUsername() async {
+    final localStorage = LocalStorageService();
+    
+    // Cek initialized
+    if (!localStorage.isInitialized) {
+      print('⚠️ LocalStorageService not initialized yet, waiting...');
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+    
+    final username = localStorage.getUsername();
+    
+    if (mounted && username != null && username.isNotEmpty) {
+      setState(() {
+        _username = username;
+      });
+      print('✅ Username loaded for display: $_username');
+    } else {
+      print('⚠️ No username available, using default: $_username');
+    }
+  }
 
   void _handleBack() {
     if (context.canPop()) {
@@ -33,7 +65,20 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
   }
 
   void _handleSignOut() {
-    context.go(AppRoutes.login);
+    // 🗑️ Clear session data saat logout
+    // userId akan tetap tersimpan untuk next login (kecuali user clear cache)
+    final localStorage = LocalStorageService();
+    localStorage.clearSessionData().then((_) {
+      print('✅ Logged out successfully');
+      if (mounted) {
+        context.go(AppRoutes.login);
+      }
+    }).catchError((e) {
+      print('❌ Error during logout: $e');
+      if (mounted) {
+        context.go(AppRoutes.login);
+      }
+    });
   }
 
   @override
@@ -126,7 +171,7 @@ class _ConfigurationPageState extends State<ConfigurationPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Alex Rivers',
+                            _username,
                             style: AppTextStyles.heading1.copyWith(
                               color: AppColors.textPrimary,
                               fontSize: 24,

@@ -141,14 +141,25 @@ class _SplashPageState extends State<SplashPage>
     
     // 🔍 Check apakah sudah ada user_id tersimpan (sudah pernah login)
     final localStorage = LocalStorageService();
-    final savedUserId = localStorage.getGuestUserId();
     
-    if (savedUserId != null) {
-      print('✅ User already logged in (guest): $savedUserId');
+    // Cek initialized
+    if (!localStorage.isInitialized) {
+      print('⚠️ LocalStorageService not initialized yet');
+      context.go(AppRoutes.login);
+      return;
+    }
+    
+    final savedUserId = localStorage.getGuestUserId();
+    final savedUsername = localStorage.getUsername();
+    
+    if (savedUserId != null && savedUsername != null) {
+      print('✅ User already logged in');
+      print('   └─ User ID: $savedUserId');
+      print('   └─ Username: $savedUsername');
       print('   → Redirect ke dashboard');
       context.go(AppRoutes.dashboard);
     } else {
-      print('⚠️ No saved user_id found');
+      print('⚠️ No saved user session found');
       print('   → Redirect ke login');
       context.go(AppRoutes.login);
     }

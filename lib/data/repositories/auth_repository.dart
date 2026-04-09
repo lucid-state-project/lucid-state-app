@@ -90,7 +90,10 @@ class AuthRepositoryImpl implements AuthRepository {
           // 💾 Save user_id ke local storage untuk request berikutnya
           await localStorage.saveGuestUserId(authResponse.userId);
           
-          // 🔍 Verify: Cek apakah save berhasil
+          // � Save username untuk display di settings page
+          await localStorage.saveUsername(authResponse.username);
+          
+          // �🔍 Verify: Cek apakah save berhasil
           final verifyUserId = localStorage.getGuestUserId();
           print('🔍 VERIFY: Saved userId = ${authResponse.userId}');
           print('🔍 VERIFY: Retrieved userId = $verifyUserId');
@@ -136,6 +139,15 @@ class AuthRepositoryImpl implements AuthRepository {
         if (data is Map<String, dynamic>) {
           final authResponse = AuthResponse.fromJson(data);
           print('✅ Login response: ${authResponse.toString()}');
+          
+          // 💾 Save username untuk display di settings page
+          final localStorage = LocalStorageService();
+          if (localStorage.isInitialized) {
+            await localStorage.saveUsername(authResponse.username);
+          } else {
+            print('⚠️ LocalStorageService not initialized, skipping username save');
+          }
+          
           return authResponse;
         }
       }
@@ -187,6 +199,15 @@ class AuthRepositoryImpl implements AuthRepository {
         if (data is Map<String, dynamic>) {
           final authResponse = AuthResponse.fromJson(data);
           print('✅ Register response: ${authResponse.toString()}');
+          
+          // 💾 Save username untuk display di settings page
+          final localStorage = LocalStorageService();
+          if (localStorage.isInitialized) {
+            await localStorage.saveUsername(authResponse.username);
+          } else {
+            print('⚠️ LocalStorageService not initialized, skipping username save');
+          }
+          
           return authResponse;
         }
       }

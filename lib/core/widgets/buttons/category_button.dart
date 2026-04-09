@@ -9,6 +9,9 @@ import 'package:lucid_state_app/core/constants/app_spacing.dart';
 /// When [isSelected] is true the button renders with the gradient fill and
 /// white text; otherwise it uses a light surface colour.
 ///
+/// Supports both icon (IconData) and image URL (String) for the category icon.
+/// If [imageUrl] is provided, it takes precedence over [icon].
+///
 /// Example:
 /// ```dart
 /// CategoryButton(
@@ -17,18 +20,28 @@ import 'package:lucid_state_app/core/constants/app_spacing.dart';
 ///   isSelected: true,
 ///   onTap: () {},
 /// )
+/// 
+/// // Or with image URL:
+/// CategoryButton(
+///   label: 'Focus',
+///   imageUrl: 'https://example.com/focus.png',
+///   isSelected: false,
+///   onTap: () {},
+/// )
 /// ```
 class CategoryButton extends StatelessWidget {
   const CategoryButton({
     super.key,
     required this.label,
-    required this.icon,
+    this.icon,
+    this.imageUrl,
     this.isSelected = false,
     this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final IconData? icon;
+  final String? imageUrl;
   final bool isSelected;
   final VoidCallback? onTap;
 
@@ -38,49 +51,78 @@ class CategoryButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 88,
+        height: 84,
         padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm + 2,
+          horizontal: AppSpacing.xs + 2,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primaryLight.withOpacity(0.08)
-              : AppColors.surfaceVariant,
+              ? const Color(0xFFE8E6F5)
+              : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(
             color: isSelected
-                ? AppColors.primaryLight.withOpacity(0.28)
+                ? const Color(0xFF15157D).withOpacity(0.15)
                 : Colors.transparent,
-            width: 1,
+            width: 1.5,
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Icon Circle - More prominent design
             Container(
-              width: 30,
-              height: 30,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected
-                    ? AppColors.primaryLight.withOpacity(0.16)
-                    : Colors.transparent,
+                    ? const Color(0xFFD4D0E8)
+                    : const Color(0xFFE8E8E8),
               ),
-              child: Icon(
-                icon,
-                size: 16,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              ),
+              child: imageUrl != null
+                  ? ClipOval(
+                      child: Image.network(
+                        imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to icon if image fails to load
+                          return Icon(
+                            icon ?? Icons.category,
+                            size: 20,
+                            color: isSelected
+                                ? const Color(0xFF15157D)
+                                : AppColors.textSecondary,
+                          );
+                        },
+                      ),
+                    )
+                  : Icon(
+                      icon ?? Icons.category,
+                      size: 20,
+                      color: isSelected
+                          ? const Color(0xFF15157D)
+                          : AppColors.textSecondary,
+                    ),
             ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                letterSpacing: 0.2,
+            SizedBox(height: 4),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isSelected
+                      ? const Color(0xFF15157D)
+                      : AppColors.textSecondary,
+                  letterSpacing: 0.3,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

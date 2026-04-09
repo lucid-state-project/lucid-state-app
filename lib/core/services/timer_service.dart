@@ -32,6 +32,9 @@ class TimerService extends ChangeNotifier {
   // Timer reference
   Timer? _sessionTimer;
 
+  // Callback for timer completion (natural timeout, not user stop)
+  VoidCallback? _onTimerComplete;
+
   // ============================================================================
   // Getters
   // ============================================================================
@@ -61,6 +64,17 @@ class TimerService extends ChangeNotifier {
   // Public Methods
   // ============================================================================
 
+  /// Sets a callback to be called when timer reaches its set duration and completes naturally.
+  ///
+  /// This callback is only triggered for set-duration timers when they reach the end,
+  /// NOT when user manually clicks the stop/complete button.
+  ///
+  /// Parameters:
+  ///   - [callback]: Function to call on timer completion, or null to remove callback
+  void setOnTimerComplete(VoidCallback? callback) {
+    _onTimerComplete = callback;
+  }
+
   /// Starts a new timer session.
   ///
   /// Initializes timer with given [activityName] and mode settings.
@@ -79,6 +93,9 @@ class TimerService extends ChangeNotifier {
   }) {
     if (_isRunning) return; // Already running
 
+    // Clear any old callback from previous session
+    _onTimerComplete = null;
+
     _isRunning = true;
     _isPaused = false;
     _currentActivityName = activityName;
@@ -95,6 +112,8 @@ class TimerService extends ChangeNotifier {
         if (_isSetDuration &&
             _totalDurationSeconds > 0 &&
             _elapsedSeconds >= _totalDurationSeconds) {
+          // Trigger callback before stopping
+          _onTimerComplete?.call();
           stopTimer();
           return;
         }

@@ -26,3 +26,62 @@ class GetSummaryDailyParams {
 }
 
 // ============================================================================
+
+/// 📊 Use case untuk get weekly summary
+/// 
+/// Mengambil data produktivitas untuk 7 hari dalam sebuah minggu
+/// 
+/// Panggilnya: 
+/// ```dart
+/// await GetWeeklySummaryUseCase(repository).call(
+///   GetWeeklySummaryParams(
+///     userId: '...',
+///     date: '2026-04-10'  // YYYY-MM-DD format
+///   )
+/// )
+/// ```
+class GetWeeklySummaryUseCase extends UseCase<WeeklySummaryResponse, GetWeeklySummaryParams> {
+  final SummaryRepository repository;
+
+  GetWeeklySummaryUseCase(this.repository);
+
+  /// 🚀 Call weekly summary API
+  /// 
+  /// Flow:
+  /// 1. Receive params dengan userId dan date
+  /// 2. Pass ke repository.getSummaryWeekly()
+  /// 3. API akan return array of 7 days data
+  /// 4. Parse sebagai WeeklySummaryResponse
+  /// 5. Return untuk display di UI
+  @override
+  Future<WeeklySummaryResponse> call(GetWeeklySummaryParams params) async {
+    return repository.getSummaryWeekly(
+      userId: params.userId,
+      date: params.date,
+    );
+  }
+}
+
+/// 📋 Parameters untuk get weekly summary
+/// 
+/// Fields:
+/// - userId: User ID untuk query
+/// - date: Target date dalam format YYYY-MM-DD
+///         API akan determine minggu mana berdasarkan date ini
+class GetWeeklySummaryParams {
+  final String userId;
+  
+  /// Date dalam format YYYY-MM-DD (e.g., "2026-04-10")
+  /// Digunakan untuk determine minggu yang mana
+  final String date;
+
+  GetWeeklySummaryParams({
+    required this.userId,
+    required this.date,
+  });
+
+  @override
+  String toString() => 'GetWeeklySummaryParams(userId: $userId, date: $date)';
+}
+
+// ============================================================================

@@ -19,6 +19,7 @@ class AppConfig {
 
   // Summary endpoints
   static const String summaryDaily = '/summary/daily';
+  static const String summaryWeekly = '/summary/weekly';
 
   // Category & Activity endpoints
   static const String categories = '/categories';

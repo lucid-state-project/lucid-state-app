@@ -5,6 +5,12 @@ import 'package:lucid_state_app/app/theme/app_colors.dart';
 import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 import 'package:lucid_state_app/core/widgets/cards/app_card.dart';
 import 'package:lucid_state_app/core/widgets/navigation/bottom_nav.dart';
+import 'package:lucid_state_app/core/services/local_storage_service.dart';
+import 'package:lucid_state_app/data/repositories/summary_repository.dart';
+import 'package:lucid_state_app/domain/usecases/summary_usecases.dart';
+import 'package:lucid_state_app/data/models/activity_models.dart';
+import 'package:lucid_state_app/data/repositories/activity_repository.dart';
+import 'package:lucid_state_app/domain/usecases/activity_usecases.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -16,6 +22,37 @@ class AnalyticsPage extends StatefulWidget {
 class _AnalyticsPageState extends State<AnalyticsPage> {
   bool _isNavigating = false;
   int _navPreviewIndex = 1;
+  
+  // ── Daily Journey State (dari selected day dari weekly chart)
+  late DateTime _selectedDate;
+  double _selectedProductiveHours = 0.0;
+  double _selectedNonProductiveHours = 0.0;
+  int _selectedPointBalance = 0;  // Point balance untuk selected day
+  
+  // ── Weekly totals untuk progress bar
+  double _weeklyTotalProductiveHours = 0.0;
+  double _weeklyTotalNonProductiveHours = 0.0;
+
+  // ── Activity Sessions (untuk Timeline)
+  List<ActivitySession> _activitySessions = [];
+  bool _isLoadingActivities = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize selected date ke hari ini
+    _selectedDate = DateTime.now();
+  }
+
+  /// 📅 Format DateTime ke YYYY-MM-DD format untuk API
+  /// 
+  /// Contoh: DateTime(2026, 4, 10) → "2026-04-10"
+  String _formatDateToApi(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
 
   Future<void> _navigateWithLoading(String route, int targetIndex) async {
     if (_isNavigating || targetIndex == 1) return;
@@ -28,6 +65,91 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     await Future.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
     context.go(route);
+  }
+
+  /// 📢 Update selected day dari weekly chart
+  void _updateSelectedDay(
+    DateTime date,
+    double productiveHours,
+    double nonProductiveHours,
+    {required double weeklyProductiveTotal, required double weeklyNonProductiveTotal}
+  ) {
+    // 📊 Calculate point balance based on productive hours
+    // Simple formula: productive_hours * 100 points
+    final pointBalance = (productiveHours * 100).toInt();
+    
+    setState(() {
+      _selectedDate = date;
+      _selectedProductiveHours = productiveHours;
+      _selectedNonProductiveHours = nonProductiveHours;
+      _selectedPointBalance = pointBalance;
+      _weeklyTotalProductiveHours = weeklyProductiveTotal;
+      _weeklyTotalNonProductiveHours = weeklyNonProductiveTotal;
+    });
+
+    // 📋 Load activity sessions untuk selected date
+    _loadActivitySessions(date);
+  }
+
+  /// 📋 Load activity sessions dari API untuk date tertentu
+  Future<void> _loadActivitySessions(DateTime date) async {
+    setState(() {
+      _isLoadingActivities = true;
+    });
+
+    try {
+      print('📋 Loading activity sessions for date: $date');
+
+      // 🔍 Get userId dari local storage
+      final localStorage = LocalStorageService();
+      final userId = localStorage.getGuestUserId();
+
+      if (userId == null) {
+        print('❌ User ID not found');
+        return;
+      }
+
+      // 📅 Format date ke YYYY-MM-DD
+      final dateStr = _formatDateToApi(date);
+      print('📅 Formatted date: $dateStr');
+
+      // 📨 Call API
+      final activityRepository = ActivityRepositoryImpl();
+      final useCase = GetActivitySessionsUseCase(activityRepository);
+      final response = await useCase.call(
+        GetActivitySessionsParams(
+          userId: userId,
+          date: dateStr,
+        ),
+      );
+
+      if (!mounted) return;
+
+      print('✅ Loaded ${response.sessions.length} activity sessions');
+      
+      // 🔍 Debug: Print FIRST session
+      if (response.sessions.isNotEmpty) {
+        final s = response.sessions[0];
+        print('   ✅ FIRST SESSION ON PAGE:');
+        print('      - title: "${s.activityName}"');
+        print('      - category: "${s.categoryName}"');
+        print('      - points: ${s.points}');
+        print('      - isProductive: ${s.isProductive}');
+      }
+
+      setState(() {
+        _activitySessions = response.sessions;
+        _isLoadingActivities = false;
+      });
+    } catch (e) {
+      print('❌ Error loading activity sessions: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingActivities = false;
+          _activitySessions = [];
+        });
+      }
+    }
   }
 
   @override
@@ -47,14 +169,29 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          _WeeklyAnalyticsSection(),
-                          SizedBox(height: 24),
-                          _DailyJourneySection(),
-                          SizedBox(height: 24),
-                          _TimelineSection(),
-                          SizedBox(height: 20),
-                          _ReviewCompleteSection(),
+                        children: [
+                          _WeeklyAnalyticsSection(
+                            onDaySelected: _updateSelectedDay,
+                          ),
+                          const SizedBox(height: 24),
+                          _DailyJourneySection(
+                            selectedDate: _selectedDate,
+                            productiveHours: _selectedProductiveHours,
+                            nonProductiveHours: _selectedNonProductiveHours,
+                            pointBalance: _selectedPointBalance,
+                            weeklyTotalProductive: _weeklyTotalProductiveHours,
+                            weeklyTotalNonProductive: _weeklyTotalNonProductiveHours,
+                          ),
+                          const SizedBox(height: 24),
+                          _TimelineSection(
+                            sessions: _activitySessions,
+                            isLoading: _isLoadingActivities,
+                          ),
+                          const SizedBox(height: 20),
+                          _ReviewCompleteSection(
+                            productiveHours: _selectedProductiveHours,
+                            nonProductiveHours: _selectedNonProductiveHours,
+                          ),
                         ],
                       ),
                     ),
@@ -137,7 +274,9 @@ class _AnalyticsHeader extends StatelessWidget {
 }
 
 class _WeeklyAnalyticsSection extends StatefulWidget {
-  const _WeeklyAnalyticsSection();
+  final Function(DateTime, double, double, {required double weeklyProductiveTotal, required double weeklyNonProductiveTotal})? onDaySelected;
+  
+  const _WeeklyAnalyticsSection({this.onDaySelected});
 
   @override
   State<_WeeklyAnalyticsSection> createState() => _WeeklyAnalyticsSectionState();
@@ -162,6 +301,22 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
   late DateTime _weekStart;
   int _selectedDayIndex = DateTime.now().weekday - 1;
 
+  // ── API & Use Cases
+  late final GetWeeklySummaryUseCase _getWeeklySummaryUseCase;
+  
+  // ── Loading State
+  bool _isLoading = false;
+  
+  // ── Weekly Data dari API
+  // Initialized dengan empty arrays, di-fill ketika API response
+  late List<double> _productiveHours = [];
+  late List<double> _nonProductiveHours = [];
+  
+  // ── Dynamic Y-Axis Scale
+  // Max scale untuk Y-axis, calculated berdasarkan data
+  // Dimulai dari 4h (minimum), bisa naik ke 8h, 12h, etc sesuai data
+  double _maxYAxisScale = 4.0;  // Default minimum
+
   @override
   void initState() {
     super.initState();
@@ -169,6 +324,224 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
     _weekStart = DateTime(now.year, now.month, now.day).subtract(
       Duration(days: now.weekday - 1),
     );
+    
+    // ── Initialize use case
+    final summaryRepository = SummaryRepositoryImpl();
+    _getWeeklySummaryUseCase = GetWeeklySummaryUseCase(summaryRepository);
+    
+    // ── 🚀 Load weekly data saat page load
+    _loadWeeklySummary();
+  }
+
+  /// 📊 Load weekly summary data dari API
+  /// 
+  /// Flow:
+  /// 1. Mark loading state (true)
+  /// 2. Retrieve userId dari local storage
+  /// 3. Format week start date ke YYYY-MM-DD
+  /// 4. Call GetWeeklySummaryUseCase dengan params
+  /// 5. API returns array of 7 days
+  /// 6. Convert detik → hours untuk productive & non-productive
+  /// 7. Build arrays untuk chart display
+  /// 8. Update UI via setState
+  /// 9. Handle errors & reset loading state
+  Future<void> _loadWeeklySummary() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('📊 Loading weekly summary for week starting: $_weekStart');
+      
+      // 🔍 Get userId dari local storage (saved guest UUID)
+      final localStorage = LocalStorageService();
+      final userId = localStorage.getGuestUserId();
+      
+      if (userId == null) {
+        print('❌ User ID not found in local storage');
+        _showErrorMessage('User not authenticated');
+        return;
+      }
+      
+      print('👤 Using userId: $userId');
+
+      // 📅 Format date ke YYYY-MM-DD
+      final dateStr = _formatDateToApi(_weekStart);
+      print('📅 Requesting data for date: $dateStr');
+
+      // 📨 Call API
+      final weeklySummary = await _getWeeklySummaryUseCase.call(
+        GetWeeklySummaryParams(
+          userId: userId,
+          date: dateStr,
+        ),
+      );
+
+      if (!mounted) return;
+
+      print('✅ Received weekly summary with ${weeklySummary.days.length} days');
+
+      // 🔄 Convert dari seconds → hours untuk chart
+      final productiveHours = <double>[];
+      final nonProductiveHours = <double>[];
+
+      for (final day in weeklySummary.days) {
+        print('   📆 ${day.date}: productive=${day.productiveHours}h, non-productive=${day.nonProductiveHours}h');
+        productiveHours.add(day.productiveHours);
+        nonProductiveHours.add(day.nonProductiveHours);
+      }
+
+      // 📊 Calculate dynamic max scale untuk Y-axis
+      // Berdasarkan nilai maksimal dari semua data
+      final maxValue = _calculateDynamicMaxScale(productiveHours, nonProductiveHours);
+      print('📈 Dynamic max Y-axis scale: ${maxValue}h');
+
+      // 📊 Update UI dengan data dari API
+      setState(() {
+        _productiveHours = productiveHours;
+        _nonProductiveHours = nonProductiveHours;
+        _maxYAxisScale = maxValue;
+        _isLoading = false;
+      });
+
+      print('✅ UI updated with weekly data');
+      
+      // 📢 Auto-select today's data untuk Daily Journey
+      // Trigger callback ke parent dengan data hari yang dipilih
+      if (productiveHours.isNotEmpty && nonProductiveHours.isNotEmpty) {
+        final selectedDate = _getSelectedDate();
+        final productive = productiveHours[_selectedDayIndex];
+        final nonProductive = nonProductiveHours[_selectedDayIndex];
+        
+        // 📊 Calculate weekly totals
+        final weeklyProductiveTotal = productiveHours.reduce((a, b) => a + b);
+        final weeklyNonProductiveTotal = nonProductiveHours.reduce((a, b) => a + b);
+        
+        print('📢 Auto-selecting day: ${selectedDate.toIso8601String()}');
+        print('   └─ Productive: ${productive}h, Non-productive: ${nonProductive}h');
+        print('   └─ Weekly totals - Productive: ${weeklyProductiveTotal.toStringAsFixed(2)}h, Non-productive: ${weeklyNonProductiveTotal.toStringAsFixed(2)}h');
+        
+        widget.onDaySelected?.call(
+          selectedDate,
+          productive,
+          nonProductive,
+          weeklyProductiveTotal: weeklyProductiveTotal,
+          weeklyNonProductiveTotal: weeklyNonProductiveTotal,
+        );
+      }
+    } catch (e) {
+      print('❌ Error loading weekly summary: $e');
+      if (mounted) {
+        _showErrorMessage('Failed to load weekly data');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// 📈 Calculate dynamic max Y-axis scale berdasarkan data
+  /// 
+  /// Logic:
+  /// 1. Hitung total kombinasi productive + non-productive untuk setiap hari
+  /// 2. Cari nilai maksimal dari semua hari
+  /// 3. Tentukan scale yang sesuai (granular untuk user baru dengan data sedikit):
+  ///    - Jika max <= 0.5h → gunakan 0.5h (30 menitan, untuk user sangat baru)
+  ///    - Jika max <= 1h → gunakan 1h
+  ///    - Jika max <= 2h → gunakan 2h
+  ///    - Jika max <= 4h → gunakan 4h
+  ///    - Jika max <= 8h → gunakan 8h
+  ///    - Jika max <= 12h → gunakan 12h
+  ///    - Jika max > 12h → gunakan 16h (bisa lanjut naik)
+  /// 4. Return scale untuk UI rendering
+  /// 
+  /// Contoh:
+  /// - Data: productive=[0.2, 0.3], non-productive=[0.1, 0.2]
+  ///   Total: [0.3, 0.5] → max=0.5 → return 0.5h (30 menitan)
+  /// - Data: productive=[0.5, 0.8], non-productive=[0.2, 0.3]
+  ///   Total: [0.7, 1.1] → max=1.1 → return 2h
+  /// - Data: productive=[2, 3], non-productive=[1, 2]
+  ///   Total: [3, 5] → max=5 → return 8h
+  double _calculateDynamicMaxScale(
+    List<double> productiveHours,
+    List<double> nonProductiveHours,
+  ) {
+    // 🔍 Find maximum value
+    double maxValue = 0.0;
+    for (int i = 0; i < productiveHours.length; i++) {
+      final total = productiveHours[i] + nonProductiveHours[i];
+      maxValue = maxValue < total ? total : maxValue;
+    }
+
+    print('      └─ Max total hours: ${maxValue.toStringAsFixed(2)}h');
+
+    // 📏 Determine appropriate scale dengan 0.5h increments
+    // Dapatkan scale dengan rounding ke atas ke 0.5h terdekat
+    double scale = 0.5; // Minimum scale adalah 0.5h (30 menitan)
+    while (scale < maxValue) {
+      scale += 0.5;
+    }
+    
+    // Cap scale maksimal di 16h untuk performance
+    if (scale > 16.0) {
+      scale = 16.0;
+    }
+    
+    print('      └─ Max value ${maxValue.toStringAsFixed(2)}h → rounded up scale: ${scale.toStringAsFixed(1)}h');
+    return scale;
+  }
+
+  /// 📅 Format DateTime ke YYYY-MM-DD format untuk API
+  /// 
+  /// Contoh: DateTime(2026, 4, 10) → "2026-04-10"
+  String _formatDateToApi(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  /// 🔄 Reload data ketika user navigate ke minggu lain
+  /// 
+  /// Called when:
+  /// - User klik arrow untuk previous week
+  /// - User klik arrow untuk next week
+  Future<void> _handleWeekChange() async {
+    print('🔄 Week changed to: $_weekStart');
+    await _loadWeeklySummary();
+  }
+
+  /// ⚠️ Show error message
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[600],
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// 🏷️ Format hour value untuk Y-axis label (tampilkan dengan decimal jika perlu, TANPA rounding)
+  /// 
+  /// Contoh:
+  /// - 0.5 → "0.5h"
+  /// - 0.25 → "0.25h" (NOT rounded to "0.3h"!)
+  /// - 1.0 → "1h"
+  /// - 1.5 → "1.5h"
+  /// - 2.0 → "2h"
+  String _formatHourLabel(double hours) {
+    // Jika hours adalah nilai bulat (1, 2, 3, dll) → tampilkan tanpa decimal
+    if (hours == hours.toInt()) {
+      return '${hours.toInt()}h';
+    }
+    // Jika ada decimal → gunakan toStringAsFixed(2) untuk precision
+    // Terus trim trailing zero (1.50 → 1.5)
+    String formatted = hours.toStringAsFixed(2);
+    if (formatted.endsWith('0') && formatted.contains('.')) {
+      formatted = formatted.substring(0, formatted.length - 1);
+    }
+    return '${formatted}h';
   }
 
   String _weekRangeLabel() {
@@ -183,11 +556,15 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
     return '$startMonth ${_weekStart.day} - $endMonth ${end.day}, ${end.year}';
   }
 
+  /// 📅 Get selected day's date
+  DateTime _getSelectedDate() {
+    return _weekStart.add(Duration(days: _selectedDayIndex));
+  }
+
   @override
   Widget build(BuildContext context) {
-    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    const productive = [3.6, 3.0, 4.6, 3.2, 4.0, 2.0, 1.8];
-    const passive = [2.0, 2.8, 1.5, 3.3, 0.9, 4.6, 5.4];
+    // ⚠️ NOTE: Data sekarang dari API (_productiveHours, _nonProductiveHours)
+    // tidak lagi hardcoded di sini
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,6 +598,8 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
                           setState(() {
                             _weekStart = _weekStart.subtract(const Duration(days: 7));
                           });
+                          // 🔄 Reload data untuk minggu yang baru
+                          _handleWeekChange();
                         },
                         child: const Icon(
                           Icons.chevron_left,
@@ -247,6 +626,8 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
                           setState(() {
                             _weekStart = _weekStart.add(const Duration(days: 7));
                           });
+                          // 🔄 Reload data untuk minggu yang baru
+                          _handleWeekChange();
                         },
                         child: const Icon(
                           Icons.chevron_right,
@@ -268,78 +649,126 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
           elevation: 1,
           child: Column(
             children: [
-              SizedBox(
-                height: 180,
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 26,
-                      child: Column(
+              // 📊 LOADING atau CHART
+              _isLoading
+                  ? SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      height: 180,
+                      child: Row(
                         children: [
-                          Expanded(
+                          SizedBox(
+                            width: 26,
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _YAxisLabel('8h'),
-                                _YAxisLabel('4h'),
-                                _YAxisLabel('0h'),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // 📈 Dynamic Y-axis labels berdasarkan _maxYAxisScale
+                                      _YAxisLabel(_formatHourLabel(_maxYAxisScale)),
+                                      _YAxisLabel(_formatHourLabel(_maxYAxisScale / 2)),
+                                      const _YAxisLabel('0h'),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
                               ],
                             ),
                           ),
-                          SizedBox(height: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(7, (i) {
+                                // 📋 Get data dari API (fallback ke 0 jika empty)
+                                final productive = i < _productiveHours.length
+                                    ? _productiveHours[i]
+                                    : 0.0;
+                                final isSelected = i == _selectedDayIndex;
+                                return Expanded(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDayIndex = i;
+                                      });
+                                      // 📢 Notify parent tentang day selection
+                                      final selectedDate = _getSelectedDate();
+                                      final productive = i < _productiveHours.length
+                                          ? _productiveHours[i]
+                                          : 0.0;
+                                      final nonProductive = i < _nonProductiveHours.length
+                                          ? _nonProductiveHours[i]
+                                          : 0.0;
+                                      
+                                      // 📊 Calculate weekly totals
+                                      final weeklyProductiveTotal = _productiveHours.reduce((a, b) => a + b);
+                                      final weeklyNonProductiveTotal = _nonProductiveHours.reduce((a, b) => a + b);
+                                      
+                                      widget.onDaySelected?.call(
+                                        selectedDate,
+                                        productive,
+                                        nonProductive,
+                                        weeklyProductiveTotal: weeklyProductiveTotal,
+                                        weeklyNonProductiveTotal: weeklyNonProductiveTotal,
+                                      );
+                                    },
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.end,
+                                      children: [
+                                        Expanded(
+                                          child: Align(
+                                            alignment:
+                                                Alignment.bottomCenter,
+                                            child: _StackBar(
+                                              productive: productive,
+                                              passive: i <
+                                                      _nonProductiveHours.length
+                                                  ? _nonProductiveHours[i]
+                                                  : 0.0,
+                                              isSelected: isSelected,
+                                              maxScale: _maxYAxisScale,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                                              [i],
+                                          style:
+                                              AppTextStyles.labelMedium.copyWith(
+                                            color: isSelected
+                                                ? AppColors.primaryDark
+                                                : AppColors.textSecondary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: List.generate(days.length, (i) {
-                          final isSelected = i == _selectedDayIndex;
-                          return Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                setState(() {
-                                  _selectedDayIndex = i;
-                                });
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: _StackBar(
-                                        productive: productive[i],
-                                        passive: passive[i],
-                                        isSelected: isSelected,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    days[i],
-                                    style: AppTextStyles.labelMedium.copyWith(
-                                      color: isSelected
-                                          ? AppColors.primaryDark
-                                          : AppColors.textSecondary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 12),
               const Divider(height: 1, color: AppColors.divider),
               const SizedBox(height: 12),
@@ -364,18 +793,23 @@ class _StackBar extends StatelessWidget {
     required this.productive,
     required this.passive,
     required this.isSelected,
+    required this.maxScale,
   });
 
   final double productive;
   final double passive;
   final bool isSelected;
+  
+  /// 📈 Maximum scale untuk bar height calculation
+  /// Dinamis berdasarkan data (4h, 8h, 12h, 16h, etc)
+  final double maxScale;
 
   @override
   Widget build(BuildContext context) {
-    const max = 8.0;
+    // 📏 Use dynamic maxScale instead of hardcoded 8.0
     const h = 138.0;
-    final productiveH = (productive / max) * h;
-    final passiveH = (passive / max) * h;
+    final productiveH = (productive / maxScale) * h;
+    final passiveH = (passive / maxScale) * h;
     final topGapH = h - productiveH - passiveH;
 
     Widget bar = Container(
@@ -455,11 +889,60 @@ class _YAxisLabel extends StatelessWidget {
   }
 }
 
+/// 🏷️ Format time hours into readable label (minutes for < 1h, hours+minutes for >= 1h)
+/// Contoh: 0.296h → "18m", 1.5h → "1h 30m", 2.0h → "2h"
+String _formatTimeLabel(double hours) {
+  if (hours == 0) return '0m';
+  
+  final totalMinutes = (hours * 60).round();
+  final wholeHours = totalMinutes ~/ 60;
+  final minutes = totalMinutes % 60;
+  
+  if (wholeHours == 0) {
+    return '${minutes}m';
+  } else if (minutes == 0) {
+    return '${wholeHours}h';
+  } else {
+    return '${wholeHours}h ${minutes}m';
+  }
+}
+
 class _DailyJourneySection extends StatelessWidget {
-  const _DailyJourneySection();
+  final DateTime selectedDate;
+  final double productiveHours;
+  final double nonProductiveHours;
+  final int pointBalance;
+  final double weeklyTotalProductive;
+  final double weeklyTotalNonProductive;
+  
+  const _DailyJourneySection({
+    required this.selectedDate,
+    required this.productiveHours,
+    required this.nonProductiveHours,
+    required this.pointBalance,
+    required this.weeklyTotalProductive,
+    required this.weeklyTotalNonProductive,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // 🏷️ Format selected date label
+    final today = DateTime.now();
+    final isToday = selectedDate.year == today.year &&
+        selectedDate.month == today.month &&
+        selectedDate.day == today.day;
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    final dayName = dayNames[selectedDate.weekday - 1];
+    final monthName = monthNames[selectedDate.month - 1];
+    final displayText = isToday ? 'Today' : dayName;
+    final dateLabel = '$displayText, $monthName ${selectedDate.day}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -471,7 +954,7 @@ class _DailyJourneySection extends StatelessWidget {
         Row(
           children: [
             Text(
-              'Today, Oct 24',
+              dateLabel,
               style: AppTextStyles.heading2.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -547,7 +1030,7 @@ class _DailyJourneySection extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                '+450',
+                '+$pointBalance',
                 style: AppTextStyles.heading.copyWith(
                   color: Colors.white,
                   fontSize: 52,
@@ -557,13 +1040,43 @@ class _DailyJourneySection extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Row(
-                children: const [
+                children: [
                   Expanded(
-                    child: _MiniBalanceCard(title: 'PRODUCTIVE', value: '6h 12m'),
+                    child: Builder(
+                      builder: (context) {
+                        // 📊 Calculate progress percentage for PRODUCTIVE based on SELECTED DAY ratio
+                        // Display selected day value dengan format "18m", "1h 30m", etc
+                        final selectedDayTotal = productiveHours + nonProductiveHours;
+                        final productivePercent = selectedDayTotal > 0 
+                            ? productiveHours / selectedDayTotal 
+                            : 0.0;
+                        
+                        return _MiniBalanceCard(
+                          title: 'PRODUCTIVE',
+                          value: _formatTimeLabel(productiveHours),
+                          progressPercentage: productivePercent,
+                        );
+                      },
+                    ),
                   ),
-                  SizedBox(width: 14),
+                  const SizedBox(width: 14),
                   Expanded(
-                    child: _MiniBalanceCard(title: 'DRIFTING', value: '1h 45m'),
+                    child: Builder(
+                      builder: (context) {
+                        // 📊 Calculate progress percentage for DRIFTING based on SELECTED DAY ratio
+                        // Display selected day value dengan format "18m", "1h 30m", etc
+                        final selectedDayTotal = productiveHours + nonProductiveHours;
+                        final driftingPercent = selectedDayTotal > 0 
+                            ? nonProductiveHours / selectedDayTotal 
+                            : 0.0;
+                        
+                        return _MiniBalanceCard(
+                          title: 'DRIFTING',
+                          value: _formatTimeLabel(nonProductiveHours),
+                          progressPercentage: driftingPercent,
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -576,10 +1089,15 @@ class _DailyJourneySection extends StatelessWidget {
 }
 
 class _MiniBalanceCard extends StatelessWidget {
-  const _MiniBalanceCard({required this.title, required this.value});
+  const _MiniBalanceCard({
+    required this.title,
+    required this.value,
+    required this.progressPercentage,
+  });
 
   final String title;
   final String value;
+  final double progressPercentage; // 0.0 to 1.0
 
   @override
   Widget build(BuildContext context) {
@@ -620,7 +1138,7 @@ class _MiniBalanceCard extends StatelessWidget {
               ),
               FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: 0.72,
+                widthFactor: progressPercentage.clamp(0.0, 1.0),
                 child: Container(
                   height: 4,
                   decoration: BoxDecoration(
@@ -638,7 +1156,48 @@ class _MiniBalanceCard extends StatelessWidget {
 }
 
 class _TimelineSection extends StatelessWidget {
-  const _TimelineSection();
+  final List<ActivitySession> sessions;
+  final bool isLoading;
+
+  const _TimelineSection({
+    required this.sessions,
+    required this.isLoading,
+  });
+
+  /// 🎨 Map category name ke icon yang sesuai
+  /// 
+  /// Logic:
+  /// - Setiap category punya icon yang berbeda
+  /// - Jika category tidak dikenali, gunakan Icon-1 sebagai default
+  /// 
+  /// Contoh mapping (adjust sesuai dengan kategori real):
+  /// - "Work" → Icon-1.png
+  /// - "Learning" → Icon-2.png
+  /// - "Entertainment" → Icon-3.png
+  /// - "Social" → Icon-4.png
+  /// - "Exercise" → Icon-5.png
+  /// - "Reading" → Icon-6.png
+  /// - Default → Icon-1.png
+  String _getIconForCategory(String category) {
+    final categoryLower = category.toLowerCase();
+    
+    if (categoryLower.contains('work') || categoryLower.contains('code')) {
+      return 'assets/icons/Analytic/Icon-1.png';
+    } else if (categoryLower.contains('learn') || categoryLower.contains('study')) {
+      return 'assets/icons/Analytic/Icon-2.png';
+    } else if (categoryLower.contains('entertain') || categoryLower.contains('game') || categoryLower.contains('watch')) {
+      return 'assets/icons/Analytic/Icon-3.png';
+    } else if (categoryLower.contains('social') || categoryLower.contains('chat') || categoryLower.contains('message')) {
+      return 'assets/icons/Analytic/Icon-4.png';
+    } else if (categoryLower.contains('exercise') || categoryLower.contains('sport') || categoryLower.contains('fitness')) {
+      return 'assets/icons/Analytic/Icon-5.png';
+    } else if (categoryLower.contains('read') || categoryLower.contains('book')) {
+      return 'assets/icons/Analytic/Icon-6.png';
+    } else {
+      // Default icon untuk category yang tidak dikenali
+      return 'assets/icons/Analytic/Icon-1.png';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -666,41 +1225,59 @@ class _TimelineSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        const _TimelineItem(
-          iconAsset: 'assets/icons/Analytic/Icon.png',
-          title: 'Deep Study',
-          subtitle: 'Learning Rust Systems • 10:30 AM',
-          score: '+120',
-          scoreColor: AppColors.primaryDark,
-          duration: '45 MINS',
-        ),
-                const SizedBox(height: 20),
-        const _TimelineItem(
-          iconAsset: 'assets/icons/Analytic/Icon-1.png',
-          title: 'Instagram Scrolling',
-          subtitle: 'Passive Entertainment • 11:15 AM',
-          score: '-45',
-          scoreColor: Color(0xFFDC2626),
-          duration: '25 MINS',
-        ),
-        const SizedBox(height: 20),
-        const _TimelineItem(
-          iconAsset: 'assets/icons/Analytic/Icon-2.png',
-          title: 'Morning Meditation',
-          subtitle: 'Mindfulness Practice • 08:00 AM',
-          score: '+200',
-          scoreColor: AppColors.primaryLight,
-          duration: '20 MINS',
-        ),
-        const SizedBox(height: 20),
-        const _TimelineItem(
-          iconAsset: 'assets/icons/Analytic/Icon-3.png',
-          title: 'YouTube Spiral',
-          subtitle: 'Tech News Binge • 01:20 PM',
-          score: '-80',
-          scoreColor: Color(0xFFDC2626),
-          duration: '55 MINS',
-        ),
+        if (isLoading)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primary,
+                ),
+              ),
+            ),
+          )
+        else if (sessions.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No activities tracked today',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          )
+        else
+          ...sessions.map((session) {
+            // 🎨 Determine color berdasarkan isProductive
+            final scoreColor = session.isProductive == true
+                ? AppColors.primaryDark
+                : (session.isProductive == false ? const Color(0xFFDC2626) : AppColors.primaryLight);
+
+            // 📊 Format score dengan +/- prefix
+            // Jika points positive: +10
+            // Jika points negative: -5 (jangan double minus)
+            final scoreText = session.points != null
+                ? (session.points! >= 0 ? '+${session.points}' : '${session.points}')
+                : (session.isProductive == null ? '??' : '0');
+
+            // 🎨 Map category ke icon yang berbeda
+            final iconAsset = _getIconForCategory(session.categoryName);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _TimelineItem(
+                iconAsset: iconAsset,
+                title: session.activityName,
+                subtitle: '${session.categoryName} • ${session.formattedStartTime}',
+                score: scoreText,
+                scoreColor: scoreColor,
+                duration: session.formattedDuration,
+              ),
+            );
+          }).toList(),
       ],
     );
   }
@@ -793,10 +1370,27 @@ class _TimelineItem extends StatelessWidget {
 }
 
 class _ReviewCompleteSection extends StatelessWidget {
-  const _ReviewCompleteSection();
+  final double productiveHours;
+  final double nonProductiveHours;
+  
+  const _ReviewCompleteSection({
+    required this.productiveHours,
+    required this.nonProductiveHours,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // 📊 Calculate total tracked hours
+    final totalHours = productiveHours + nonProductiveHours;
+    final totalMinutes = (totalHours * 60).round();
+    final wholeHours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    
+    // 🏷️ Format total time
+    final timeDisplay = wholeHours > 0 
+        ? (minutes > 0 ? '$wholeHours h $minutes m' : '$wholeHours h')
+        : '$minutes m';
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
@@ -815,7 +1409,7 @@ class _ReviewCompleteSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "You've tracked 8 hours of your cognitive energy\ntoday.",
+            "You've tracked $timeDisplay of your cognitive energy\ntoday.",
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
           ),

@@ -6,6 +6,7 @@ import 'package:lucid_state_app/app/theme/app_text_styles.dart';
 import 'package:lucid_state_app/core/widgets/index.dart';
 import 'package:lucid_state_app/core/api/exceptions.dart';
 import 'package:lucid_state_app/core/services/local_storage_service.dart';
+import 'package:lucid_state_app/core/constants/dev_constants.dart';
 import 'package:lucid_state_app/data/repositories/auth_repository.dart';
 import 'package:lucid_state_app/domain/usecases/auth_usecases.dart';
 
@@ -30,6 +31,9 @@ class _LoginPageState extends State<LoginPage> {
   // ── Loading & Error States
   bool _isLoadingLogin = false;
   bool _isLoadingGuest = false;
+  
+  // ── Auto-login state (development only)
+  bool _autoLoginAttempted = false;
 
   @override
   void initState() {
@@ -39,18 +43,142 @@ class _LoginPageState extends State<LoginPage> {
     _loginUseCase = LoginUseCase(_authRepository);
     _guestLoginUseCase = GuestLoginUseCase(_authRepository);
     
-    // ── Initialize local storage untuk guest user_id persistence
-    _initializeLocalStorage();
+    // ── Initialize local storage & setup fixed guest account
+    _initializeLocalStorageWithFixedGuest();
   }
 
-  /// Initialize local storage service
-  /// Harus di-call sekali saat app startup
-  Future<void> _initializeLocalStorage() async {
+  /// 🔧 Initialize local storage dan pre-set fixed guest account
+  /// 
+  /// Flow:
+  /// 1. Initialize LocalStorageService (singleton)
+  /// 2. Pre-set fixed UUID dan username dari DevConstants
+  ///    └─ Saat app startup, storage akan punya ini untuk guest login
+  /// 3. Trigger auto-login setelah delay (jika enabled)
+  ///
+  /// This ensures:
+  /// - Guest login always reuse same UUID (tidak create user baru)
+  /// - Same account setiap app restart
+  /// - Same account ketika user click "Continue as Guest"
+  Future<void> _initializeLocalStorageWithFixedGuest() async {
     try {
-      await LocalStorageService().init();
+      final localStorage = LocalStorageService();
+      
+      // ✅ Initialize storage service
+      await localStorage.init();
       print('✅ Local storage initialized');
+      
+      // 💾 PRE-SET: Save fixed guest UUID dan username
+      // Ini akan di-reuse oleh guest login (tidak create user baru)
+      print('💾 PRE-SETTING fixed guest account:');
+      print('   └─ UUID: ${DevConstants.fixedGuestUuid}');
+      print('   └─ Username: ${DevConstants.fixedGuestUsername}');
+      
+      await localStorage.saveGuestUserId(DevConstants.fixedGuestUuid);
+      await localStorage.saveUsername(DevConstants.fixedGuestUsername);
+      
+      print('✅ Fixed guest account set to local storage');
+      
+      // 🚀 TRIGGER AUTO-LOGIN (setelah delay)
+      // 
+      // Check if auto-login enabled di config
+      // Jika ya, schedule auto-login dengan delay untuk UI ready
+      if (DevConstants.enableAutoLogin && !_autoLoginAttempted) {
+        Future.delayed(
+          Duration(milliseconds: DevConstants.autoLoginDelayMs),
+          () {
+            if (mounted) {
+              print('🚀 AUTO-LOGIN TRIGGER: Performing guest login...');
+              _performAutoLogin();
+            }
+          },
+        );
+      }
     } catch (e) {
       print('❌ Error initializing local storage: $e');
+    }
+  }
+
+  /// 🚀 AUTO-LOGIN METHOD (Development Only - GUEST LOGIN)
+  /// 
+  /// Step-by-step flow:
+  /// 1. Mark attempt (prevent duplicate auto-login calls)
+  /// 2. Set loading state untuk show progress
+  /// 3. Call guest login use case (tidak perlu credentials)
+  /// 4. Guest login akan:
+  ///    a. Check local storage untuk UUID
+  ///    b. Find UUID: 989c6b32-f32a-4ffb-8702-06f007e0aeeb (pre-set)
+  ///    c. POST /auth/guest?userId={uuid}
+  ///    d. API recognize UUID, reuse account (NOT create new)
+  ///    e. Return account data
+  /// 5. Success → Navigate ke Dashboard
+  /// 6. Error → Show message, tetap di login page
+  /// 7. Finally → Reset loading state
+  /// 
+  /// ⚠️ IMPORTANT:
+  /// - UUID sudah pre-set di local storage di initState
+  /// - Guest login akan pick up UUID dari storage
+  /// - Same account everytime (baik auto-login atau manual click "Continue as Guest")
+  /// - mounted check untuk prevent setState after dispose
+  Future<void> _performAutoLogin() async {
+    // 🔄 Mark bahwa auto-login attempt sudah dilakukan
+    _autoLoginAttempted = true;
+    
+    setState(() {
+      _isLoadingLogin = true;
+    });
+
+    try {
+      print('🚀 AUTO-LOGIN EXECUTING:');
+      print('   Step 1: Guest login akan pick UUID dari local storage');
+      print('   Step 2: POST /auth/guest?userId=989c6b32-f32a-4ffb-8702-06f007e0aeeb');
+      print('   Step 3: API reuse same account');
+      
+      // 📨 Call guest login (akan pick up pre-set UUID dari storage)
+      final authResponse = await _guestLoginUseCase.call(
+        GuestLoginParams(),
+      );
+
+      if (mounted) {
+        print('✅ AUTO-LOGIN SUCCESSFUL');
+        print('   └─ Guest UUID: ${authResponse.userId}');
+        print('   └─ Is Guest: ${authResponse.isGuest}');
+        print('   └─ Username: ${authResponse.username}');
+        
+        // 🧭 Navigate ke Dashboard
+        context.go(AppRoutes.dashboard);
+      }
+    } on ValidationException catch (e) {
+      // ⚠️ Validation error
+      if (mounted) {
+        print('❌ AUTO-LOGIN VALIDATION ERROR: ${e.message}');
+        _showErrorSnackBar('Validation Error: ${e.message}');
+      }
+    } on AuthException catch (e) {
+      // ⚠️ Auth error
+      if (mounted) {
+        print('❌ AUTO-LOGIN AUTH ERROR: ${e.message}');
+        _showErrorSnackBar('Auth Error: ${e.message}');
+      }
+    } on NetworkException catch (e) {
+      // ⚠️ Network error
+      if (mounted) {
+        print('❌ AUTO-LOGIN NETWORK ERROR: ${e.message}');
+        _showErrorSnackBar('Network Error: ${e.message}');
+      }
+    } catch (e) {
+      // ⚠️ Unknown error
+      if (mounted) {
+        print('❌ AUTO-LOGIN UNKNOWN ERROR: $e');
+        print('Stack trace: ${StackTrace.current}');
+        _showErrorSnackBar('Error: ${e.toString()}');
+      }
+    } finally {
+      // 🔄 Reset loading state
+      if (mounted) {
+        setState(() {
+          _isLoadingLogin = false;
+        });
+      }
     }
   }
 

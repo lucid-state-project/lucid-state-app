@@ -1072,46 +1072,53 @@ class _DashboardPageState extends State<DashboardPage> with TickerProviderStateM
                     setState(() => _isSetDuration = true);
                     _durationFocusNode.requestFocus();
                   },
-                  child: Container(
-                    height: 52,
-                    decoration: BoxDecoration(
+                  child: TextField(
+                    controller: _durationController,
+                    focusNode: _durationFocusNode,
+                    readOnly: !_isSetDuration,
+                    textAlign: TextAlign.left,
+                    keyboardType: TextInputType.number,
+                    style: AppTextStyles.heading3.copyWith(
                       color: _isSetDuration
-                          ? AppColors.surfaceVariant
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: _isSetDuration
-                            ? AppColors.primary.withOpacity(0.25)
-                            : AppColors.divider,
-                      ),
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    child: TextField(
-                      controller: _durationController,
-                      focusNode: _durationFocusNode,
-                      readOnly: !_isSetDuration,
-                      textAlign: TextAlign.left,
-                      keyboardType: TextInputType.number,
-                      style: AppTextStyles.heading3.copyWith(
-                        color: _isSetDuration
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.w700,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surfaceVariant,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: _isSetDuration ? AppColors.primary : AppColors.divider,
+                          width: _isSetDuration ? 1.5 : 0.8,
+                        ),
                       ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.divider,
+                          width: 0.8,
                         ),
-                        suffixText: 'MIN',
-                        suffixStyle: AppTextStyles.labelLarge.copyWith(
-                          color: _isSetDuration
-                              ? AppColors.textSecondary
-                              : AppColors.textHint,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.8,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
                         ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      suffixText: 'MIN',
+                      suffixStyle: AppTextStyles.labelLarge.copyWith(
+                        color: _isSetDuration
+                            ? AppColors.textSecondary
+                            : AppColors.textHint,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ),

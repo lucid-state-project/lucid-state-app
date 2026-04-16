@@ -529,26 +529,28 @@ class _WeeklyAnalyticsSectionState extends State<_WeeklyAnalyticsSection> {
     );
   }
 
-  /// 🏷️ Format hour value untuk Y-axis label (tampilkan dengan decimal jika perlu, TANPA rounding)
+  /// 🏷️ Format hour value untuk Y-axis label dengan readable time format (menit untuk < 1h, jam untuk >= 1h)
   /// 
   /// Contoh:
-  /// - 0.5 → "0.5h"
-  /// - 0.25 → "0.25h" (NOT rounded to "0.3h"!)
+  /// - 0.25 → "15m"
+  /// - 0.5 → "30m"
   /// - 1.0 → "1h"
-  /// - 1.5 → "1.5h"
+  /// - 1.5 → "1h 30m"
   /// - 2.0 → "2h"
   String _formatHourLabel(double hours) {
-    // Jika hours adalah nilai bulat (1, 2, 3, dll) → tampilkan tanpa decimal
-    if (hours == hours.toInt()) {
-      return '${hours.toInt()}h';
+    if (hours == 0) return '0m';
+    
+    final totalMinutes = (hours * 60).round();
+    final wholeHours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+    
+    if (wholeHours == 0) {
+      return '${minutes}m';
+    } else if (minutes == 0) {
+      return '${wholeHours}h';
+    } else {
+      return '${wholeHours}h ${minutes}m';
     }
-    // Jika ada decimal → gunakan toStringAsFixed(2) untuk precision
-    // Terus trim trailing zero (1.50 → 1.5)
-    String formatted = hours.toStringAsFixed(2);
-    if (formatted.endsWith('0') && formatted.contains('.')) {
-      formatted = formatted.substring(0, formatted.length - 1);
-    }
-    return '${formatted}h';
   }
 
   String _weekRangeLabel() {

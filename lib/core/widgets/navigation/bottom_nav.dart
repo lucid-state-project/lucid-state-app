@@ -29,7 +29,7 @@ class DashboardBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 86,
+      height: 70,
       decoration: const BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
@@ -85,23 +85,7 @@ class _NavItem extends StatelessWidget {
             width: isActive ? 156 : 120,
             height: 56,
             decoration: BoxDecoration(
-              gradient: isActive
-                  ? const LinearGradient(
-                      colors: [AppColors.primaryDark, AppColors.primaryLight],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
-                  : null,
               borderRadius: BorderRadius.circular(999),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primaryLight.withOpacity(0.28),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -109,8 +93,8 @@ class _NavItem extends StatelessWidget {
                 Icon(
                   icon,
                   color: isActive
-                      ? Colors.white
-                      : const Color(0xFF93A0B7),
+                      ? AppColors.primaryDark 
+                      : AppColors.textPrimary,
                   size: 20,
                 ),
                 const SizedBox(height: 4),
@@ -118,9 +102,10 @@ class _NavItem extends StatelessWidget {
                   label,
                   style: AppTextStyles.labelSmall.copyWith(
                     color: isActive
-                        ? Colors.white
-                        : const Color(0xFF93A0B7),
+                        ? AppColors.primaryDark 
+                        : AppColors.textPrimary,
                     letterSpacing: 0.4,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],

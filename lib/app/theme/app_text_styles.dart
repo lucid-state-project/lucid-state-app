@@ -8,7 +8,7 @@ class AppTextStyles {
   // Headings
   static const TextStyle heading = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 36,
+    fontSize: 28,
     fontStyle: FontStyle.normal,
     fontWeight: FontWeight.w900,
     height: 1.2,
@@ -17,7 +17,7 @@ class AppTextStyles {
   // Headings
   static const TextStyle heading1 = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 36,
+    fontSize: 28,
     fontStyle: FontStyle.italic,
     fontWeight: FontWeight.w900,
     height: 1.2,
@@ -25,14 +25,14 @@ class AppTextStyles {
 
   static const TextStyle heading2 = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: FontWeight.w700,
     height: 1.3,
   );
 
     static const TextStyle heading2Italic = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 24,
+    fontSize: 20,
     fontStyle: FontStyle.italic,
     fontWeight: FontWeight.w700,
     height: 1.3,
@@ -40,7 +40,7 @@ class AppTextStyles {
 
   static const TextStyle heading3 = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.4,
   );
@@ -48,14 +48,14 @@ class AppTextStyles {
   // Body
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.5,
   );
 
   static const TextStyle bodyMedium = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.5,
   );
@@ -92,7 +92,7 @@ class AppTextStyles {
   // Button
   static const TextStyle button = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.5,
     letterSpacing: 0.5,

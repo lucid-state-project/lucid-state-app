@@ -74,20 +74,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     double nonProductiveHours,
     {required double weeklyProductiveTotal, required double weeklyNonProductiveTotal}
   ) {
-    // 📊 Calculate point balance based on productive hours
-    // Simple formula: productive_hours * 100 points
-    final pointBalance = (productiveHours * 100).toInt();
-    
     setState(() {
       _selectedDate = date;
       _selectedProductiveHours = productiveHours;
       _selectedNonProductiveHours = nonProductiveHours;
-      _selectedPointBalance = pointBalance;
       _weeklyTotalProductiveHours = weeklyProductiveTotal;
       _weeklyTotalNonProductiveHours = weeklyNonProductiveTotal;
     });
 
     // 📋 Load activity sessions untuk selected date
+    // Point balance akan dihitung dari sum points setelah sessions dimuat
     _loadActivitySessions(date);
   }
 
@@ -137,8 +133,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         print('      - isProductive: ${s.isProductive}');
       }
 
+      // 📊 Calculate point balance dari sum semua session points
+      int totalPoints = 0;
+      for (final session in response.sessions) {
+        if (session.points != null) {
+          totalPoints += session.points!;
+        }
+      }
+      print('📊 Calculated point balance from sessions: $totalPoints');
+
       setState(() {
         _activitySessions = response.sessions;
+        _selectedPointBalance = totalPoints;
         _isLoadingActivities = false;
       });
     } catch (e) {
@@ -147,6 +153,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         setState(() {
           _isLoadingActivities = false;
           _activitySessions = [];
+          _selectedPointBalance = 0;
         });
       }
     }
